@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F3F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101418" media="(prefers-color-scheme: dark)">
+<title>素卷 · Plain Book 设计系统 v1.0</title>
+<script>
+/* 主题先行（免闪屏）：默认跟随系统，手动选择存 localStorage */
+(function(){
+  var t = "light";
+  try{
+    t = localStorage.getItem("pb-theme") ||
+        (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  }catch(e){}
+  document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
+<style>
+/* ============================================================
+   素卷 · Plain Book 设计系统 v1.0
+   ------------------------------------------------------------
+   一本给程序员读的 C++ 书，在 1280px 量级的屏幕上长读。
+   三条总原则：
+   1. 只靠字阶、间距、发丝线做层次——零装饰（无印章/描金/题花/圆点）。
+   2. 单栏正文独占屏幕：目录收进顶部按钮唤出的抽屉，阅读时零干扰。
+   3. 代码属于纸面：白底细框，绝不在白纸长文里嵌深色浮版。
+   裸值只出现在 :root；组件一律 var(--token)。
+   ============================================================ */
+
+/* ---------- 1. 令牌 ---------- */
+:root{
+  /* 纸与墨 */
+  --paper:      #FFFFFF;
+  --paper-2:    #F7F8F9;      /* 表头 / 代码头 / 次级底 */
+  --desk:       #F3F5F7;      /* 桌面：页面底色，白纸页浮于其上 */
+  --ink:        #1E262B;      /* 正文 15.5:1 */
+  --ink-2:      #4E5A61;      /* 次要 7.6:1 */
+  --ink-3:      #7D8890;      /* 弱化 4.6:1，只用于非关键信息 */
+
+  /* 线 */
+  --line:       #E7EAEC;      /* 发丝线 */
+  --line-2:     #D6DCDF;      /* 结构线 */
+
+  /* 强调：静墨蓝。只用于链接、节号、激活态——版面占比 ≤5% */
+  --accent:        #2F5FA3;
+  --accent-strong: #24497D;
+  --accent-soft:   #EDF3FA;
+
+  /* 语义色（仅状态组件：提示框 / 正误对照） */
+  --success:    #1A7F37;
+  --warning:    #9A6700;
+  --danger:     #CF222E;
+
+  /* 图内语义配色（PB-30）：白底全彩描边、文字永墨；单图辅色 ≤2 主色相 */
+  --dg-bad:     #CF222E;      /* 正红：失效/悬垂/危险（与 --danger 同源） */
+  --dg-new:     #2DA44E;      /* 亮绿：新分配/新增（比 --success 提亮） */
+  --dg-ext:     #8250DF;      /* 紫：外部系统/语言对照（与 --tok-fn 同源） */
+
+  /* 代码纸：白底细框（GitHub-light 语义色） */
+  --code-bg:    #FFFFFF;
+  --code-line:  #D6DCDF;
+  --code-ink:   #24292F;
+  --code-inline:#EFF2F4;    /* 行内代码浅灰片 */
+  --tok-key:    #CF222E;      /* 关键字 */
+  --tok-str:    #0A3069;      /* 字符串 */
+  --tok-num:    #0550AE;      /* 数字 */
+  --tok-com:    #6E7781;      /* 注释 */
+  --tok-fn:     #8250DF;      /* 函数 */
+
+  /* 遮罩 */
+  --backdrop:   rgba(30,38,43,.32);
+
+  /* 字族：西文在前（逐字符回退，拉丁字形更精）；中文交给各平台系统字，
+     不显式绑定品牌中文字体（MDN / VitePress / Vue 官网共识），Linux 显式兜底 */
+  --font-sans: -apple-system, "Segoe UI", "Helvetica Neue",
+               "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC",
+               "Source Han Sans SC", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas,
+               "Sarasa Mono SC", "Microsoft YaHei", monospace;
+
+  /* 字阶（7 级） */
+  --fs-300: 2.25rem;    /* 36 章题 */
+  --fs-250: 1.625rem;   /* 26 h2 */
+  --fs-200: 1.25rem;    /* 20 h3 */
+  --fs-150: 1.0625rem;  /* 17 正文 */
+  --fs-125: .9375rem;   /* 15 次级 */
+  --fs-100: .875rem;    /* 14 表格/代码内说明 */
+  --fs-75:  .8125rem;   /* 13 元信息 */
+
+  /* 间距（近小远大） */
+  --gap-tight: 12px;    /* 同族块：li 间、代码与随文 */
+  --gap-para:  14px;    /* 段落 */
+  --gap-block: 24px;    /* 段落与组件 */
+  --gap-sec:   64px;    /* 节间 */
+
+  /* 布局：双档版心——文字列窄、组件版心宽 */
+  --drawer-w:  300px;   /* 目录抽屉宽 */
+  --measure:   840px;   /* 组件版心：代码 / 表格 / 插图 / 提示框 / 规则卡 */
+  --measure-text: 720px;/* 文字列：正文 / 列表 / 引用（17px 下约 42 字/行） */
+  --radius:    10px;
+
+  --dur:  150ms;
+  --ease: cubic-bezier(.4, 0, .2, 1);
+}
+
+/* ---------- 1b. 墨版：整页翻转 ---------- */
+/* 深灰纸面 + 米白墨字，绝不与纸面混排；代码与纸面同底，配色切 GitHub-dark 语义 */
+:root[data-theme="dark"]{
+  --desk:      #101418;
+  --paper:     #171B20;      /* 纸面深灰，不用纯黑（防白字光晕） */
+  --paper-2:   #1E242B;
+  --ink:       #E2E6EA;      /* 墨字米白，不用纯白 */
+  --ink-2:     #AAB4BD;
+  --ink-3:     #828C96;
+  --line:      #2A323A;
+  --line-2:    #3A444E;
+
+  --accent:        #7CA6DD;  /* 静墨蓝提亮一档，保住链接对比 */
+  --accent-strong: #A3C4EA;
+  --accent-soft:   color-mix(in srgb, #7CA6DD 16%, transparent);
+
+  --success:   #4CC38A;
+  --warning:   #D4A72C;
+  --danger:    #F2555A;
+
+  --dg-bad:    #F85149;
+  --dg-new:    #3FB950;
+  --dg-ext:    #B581F7;
+
+  --code-bg:   #171B20;
+  --code-line: #3A444E;
+  --code-ink:  #E2E6EA;
+  --code-inline:#232A32;
+  --tok-key:    #FF7B72;      /* GitHub-dark 语义色 */
+  --tok-str:    #A5D6FF;
+  --tok-num:    #79C0FF;
+  --tok-com:    #8B949E;
+  --tok-fn:     #D2A8FF;
+
+  --backdrop:  rgba(4,8,12,.55);
+}
+
+/* ---------- 2. 基础 ---------- */
+*, *::before, *::after{ box-sizing:border-box; scrollbar-width:thin; scrollbar-color:var(--line-2) transparent; }
+html{ scroll-behavior:smooth; scroll-padding-top:70px; }
+body{
+  margin:0;
+  background:var(--desk);
+  color:var(--ink);
+  font-family:var(--font-sans);
+  font-size:var(--fs-150);
+  line-height:1.8;
+  font-synthesis:none;            /* CJK 无粗体变体时禁合成加粗（防笔画发糊） */
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* 中文排印细则：避头尾从严、中西文自动四分之一空、标题均衡换行、正文防孤行 */
+:lang(zh) h1, :lang(zh) h2, :lang(zh) h3, :lang(zh) h4,
+:lang(zh) p, :lang(zh) li{ line-break:strict; }
+h1, h2, h3, h4, figcaption{ text-wrap:balance; }
+.prose{ text-autospace:normal; hanging-punctuation:first last; }
+.prose p, .prose li{ text-wrap:pretty; text-justify:inter-character; }
+
+::selection{ background:var(--accent); color:var(--paper); }
+a{ color:var(--accent); text-decoration:none; }
+a:hover{ color:var(--accent-strong); text-decoration:underline; text-underline-offset:3px; }
+:focus-visible{ outline:3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset:2px; border-radius:4px; }
+.skip-link{
+  position:fixed; top:-48px; left:16px; z-index:99;
+  background:var(--ink); color:var(--paper);
+  padding:8px 14px; border-radius:0 0 8px 8px;
+  font-size:var(--fs-75);
+  transition:top var(--dur) var(--ease);
+}
+.skip-link:focus{ top:0; }
+@media (prefers-reduced-motion:reduce){
+  html{ scroll-behavior:auto; }
+  *, *::before, *::after{ transition:none !important; animation:none !important; }
+}
+
+/* ---------- 3. 布局骨架：顶栏 + 单栏正文 + 目录抽屉 ---------- */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  display:flex; align-items:center; gap:14px;
+  height:54px;
+  padding:0 max(20px, calc((100% - var(--measure) - 96px) / 2));
+  background:var(--desk);
+  border-bottom:1px solid var(--line);
+}
+.toc-btn{
+  flex:none;
+  display:inline-flex; align-items:center; gap:8px;
+  height:34px; padding:0 12px;
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:8px;
+  color:var(--ink-2);
+  font-family:var(--font-sans); font-size:var(--fs-100);
+  cursor:pointer;
+  transition:color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.toc-btn:hover{ color:var(--ink); background:var(--paper); }
+.toc-btn svg{ width:14px; height:14px; display:block; }
+.theme-btn{
+  flex:none;
+  width:32px; height:32px;
+  display:grid; place-items:center;
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:8px;
+  color:var(--ink-3);
+  cursor:pointer;
+  transition:color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.theme-btn:hover{ color:var(--ink); background:var(--paper); }
+.theme-btn svg{ width:15px; height:15px; display:block; }
+.theme-btn .i-sun{ display:none; }
+:root[data-theme="dark"] .theme-btn .i-sun{ display:block; }
+:root[data-theme="dark"] .theme-btn .i-moon{ display:none; }
+.topbar-title{
+  font-size:var(--fs-125); font-weight:600; color:var(--ink);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.topbar-title:hover{ text-decoration:none; color:var(--ink); }
+.topbar-chap{
+  margin-left:auto;
+  max-width:44%;
+  font-size:var(--fs-75); color:var(--ink-3);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+@media (max-width:760px){
+  .topbar{ gap:10px; }
+  .topbar-chap{ display:none; }
+  .prose{ margin:0 16px; padding:32px 20px 24px; }
+}
+
+/* 目录抽屉：默认收起，body.toc-open 滑出 */
+.drawer-backdrop{
+  position:fixed; inset:0; z-index:60;
+  background:var(--backdrop);
+  opacity:0; pointer-events:none;
+  transition:opacity .2s var(--ease);
+}
+.sidenav{
+  position:fixed; top:0; bottom:0; left:0; z-index:70;
+  width:var(--drawer-w);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  background:var(--paper);
+  border-right:1px solid var(--line);
+  padding:18px 14px 40px;
+  font-size:var(--fs-100);
+  transform:translateX(-102%);
+  transition:transform .22s ease;
+}
+body.toc-open{ overflow:hidden; }
+body.toc-open .sidenav{ transform:none; box-shadow:0 0 48px rgba(20,28,34,.16); }
+body.toc-open .drawer-backdrop{ opacity:1; pointer-events:auto; }
+
+.side-head{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:8px;
+  padding:0 10px; margin-bottom:4px;
+}
+.side-brand{
+  display:block; min-width:0;
+  font-weight:600; font-size:var(--fs-125);
+  color:var(--ink);
+}
+.side-brand:hover{ text-decoration:none; }
+.side-brand small{
+  display:block; margin-top:2px;
+  font-weight:400; font-size:var(--fs-75);
+  color:var(--ink-3); letter-spacing:.02em;
+}
+.drawer-close{
+  flex:none; margin-top:2px;
+  width:28px; height:28px;
+  border:none; background:transparent;
+  border-radius:6px;
+  color:var(--ink-3);
+  cursor:pointer;
+  display:grid; place-items:center;
+}
+.drawer-close:hover{ color:var(--ink); background:var(--paper-2); }
+.drawer-close svg{ width:13px; height:13px; display:block; }
+.side-part{
+  margin:20px 10px 6px;
+  padding-top:14px;
+  border-top:1px solid var(--line);
+  font-size:11px; font-weight:600;
+  letter-spacing:.14em;
+  color:var(--ink-3);
+}
+.side-head + .side-part{ margin-top:12px; padding-top:0; border-top:none; }
+.sidenav a.ch-link{
+  display:block;
+  padding:5px 10px;
+  border-radius:6px;
+  color:var(--ink-2);
+  line-height:1.5;
+}
+.sidenav a.ch-link:hover{ background:var(--paper-2); color:var(--ink); text-decoration:none; }
+.sidenav a.ch-link.active{
+  background:var(--accent-soft);
+  color:var(--accent-strong);
+  font-weight:600;
+}
+.side-toc{
+  margin:4px 0 10px 22px;
+  padding-left:8px;
+  border-left:1px solid var(--line-2);
+}
+.side-toc a{
+  display:block;
+  padding:3px 10px;
+  font-size:var(--fs-75);
+  color:var(--ink-3);
+  border-radius:6px;
+  line-height:1.5;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.side-toc a:hover{ color:var(--ink); text-decoration:none; }
+.side-toc a.cur{ color:var(--accent); font-weight:600; }
+
+/* 右侧「本页」大纲细轨：≥1360px 常驻、滚动跟随；窄屏退场，导航交回抽屉 */
+.pagerail{
+  position:fixed; top:50%; transform:translateY(-50%);
+  right:20px; z-index:30;
+  width:176px; max-height:calc(100vh - 140px);
+  overflow-y:auto; overscroll-behavior:contain;
+  scrollbar-width:none;
+  font-size:var(--fs-75); line-height:1.5;
+  display:none;
+}
+.pagerail::-webkit-scrollbar{ display:none; }
+.pagerail-head{
+  margin:0 0 6px 12px;
+  font-size:11px; font-weight:600;
+  letter-spacing:.14em;
+  color:var(--ink-3);
+}
+.pagerail a{
+  display:block;
+  padding:4px 12px;
+  border-left:2px solid var(--line);
+  color:var(--ink-3);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.pagerail a:hover{ color:var(--ink); text-decoration:none; border-left-color:var(--line-2); }
+.pagerail a.cur{ color:var(--accent); border-left-color:var(--accent); font-weight:600; }
+@media (min-width:1360px){ .pagerail{ display:block; } }
+
+.main{ display:block; }
+.prose{
+  width:100%;
+  max-width:calc(var(--measure) + 96px);
+  margin:0 auto;
+  padding:56px 48px 32px;
+  background:var(--paper);
+  border:1px solid var(--line);
+  box-shadow:0 1px 2px rgba(16,24,40,.04);   /* 纸页浮起的一道气口，仅此一档 */
+}
+/* 双档版心：正文 / 列表 / 引用落在 720px 文字列（左缘与版心对齐、向右收短），
+   代码 / 表格 / 插图 / 提示框等组件占满 840px 组件版心 */
+.prose section > p,
+.prose section > ul, .prose section > ol,
+.prose section > blockquote,
+.chapter-head > p{ max-width:var(--measure-text); }
+.prose .table-cap{ max-width:none; }   /* 题注居中于组件版心，不吃文字列 */
+
+/* ---------- 4. 章头 ---------- */
+.chapter-head{
+  margin:0 0 44px;
+  padding-bottom:28px;
+  border-bottom:1px solid var(--line);
+}
+.chapter-kicker{
+  margin:0 0 6px;
+  font-family:var(--font-mono);
+  font-size:var(--fs-75);
+  letter-spacing:.12em;
+  color:var(--ink-3);
+}
+.chapter-title{
+  margin:0 0 16px;
+  font-size:var(--fs-300);
+  font-weight:600;
+  line-height:1.25;
+}
+.chapter-lead{
+  margin:0 0 var(--gap-para);
+  font-size:var(--fs-125);
+  line-height:1.8;
+  color:var(--ink-2);
+}
+.chapter-head > p:not(.chapter-lead){
+  margin:0 0 var(--gap-para);
+  color:var(--ink);
+}
+.chapter-head > ul,
+.chapter-head > ol{ margin:var(--gap-tight) 0 0; }
+.chapter-head > .code-wrap,
+.chapter-head > .table-wrap,
+.chapter-head > .callout,
+.chapter-head > .diagram{ margin-top:var(--gap-block); }
+
+/* ---------- 5. 标题与正文节奏 ---------- */
+.prose section{ margin-top:var(--gap-sec); }
+.prose section:first-of-type{ margin-top:0; }
+
+.prose h2{
+  margin:0 0 20px;
+  padding-bottom:12px;
+  border-bottom:1px solid var(--line);
+  font-size:var(--fs-250);
+  font-weight:600;
+  line-height:1.35;
+}
+.prose h3{
+  margin:40px 0 12px;
+  padding-left:12px;
+  border-left:3px solid var(--accent);
+  font-size:var(--fs-200);
+  font-weight:600;
+  line-height:1.4;
+}
+.prose h4{
+  margin:28px 0 10px;
+  font-size:var(--fs-150);
+  font-weight:600;
+}
+.prose h2 .h-num{
+  color:var(--accent);
+  font-variant-numeric:tabular-nums;
+  margin-right:10px;
+}
+.h-anchor{
+  margin-left:8px;
+  font-size:var(--fs-125);
+  color:var(--ink-3);
+  opacity:0;
+  transition:opacity var(--dur) var(--ease);
+}
+h2:hover .h-anchor, h3:hover .h-anchor{ opacity:1; }
+.h-anchor:hover{ color:var(--accent); text-decoration:none; }
+
+.prose p{ margin:0 0 var(--gap-para); text-align:justify; overflow-wrap:break-word; }
+.prose section > p:last-child{ margin-bottom:0; }
+.lead{
+  font-size:var(--fs-125);
+  color:var(--ink-2);
+}
+.prose ul, .prose ol{ margin:0 0 var(--gap-para); padding-left:1.5em; }
+.prose li{ margin-bottom:var(--gap-tight); text-align:justify; }
+.prose li > ul, .prose li > ol{ margin-top:var(--gap-tight); }
+.prose li::marker{ color:var(--ink-3); }
+.prose ol > li::marker{ color:var(--accent); font-weight:600; }
+.prose strong{ font-weight:600; }
+.prose hr{ border:none; width:64px; margin:36px auto; border-top:1px solid var(--line-2); }
+
+.prose blockquote{
+  margin:0 0 var(--gap-para);
+  padding:2px 0 2px 18px;
+  border-left:3px solid var(--line-2);
+  color:var(--ink-2);
+}
+
+/* 行内代码：中性浅灰片 */
+.prose :not(pre) > code{
+  font-family:var(--font-mono);
+  font-size:.86em;
+  color:var(--ink);
+  background:var(--code-inline);
+  border-radius:5px;
+  padding:.12em .38em;
+  overflow-wrap:anywhere;
+  font-feature-settings:"calt" 0;
+}
+
+/* ---------- 6. 代码块：纸面上的代码 ---------- */
+.code-wrap{
+  margin:var(--gap-block) 0;
+  background:var(--code-bg);
+  border:1px solid var(--code-line);
+  border-radius:var(--radius);
+  overflow:hidden;
+}
+.code-head{
+  display:flex; align-items:center; gap:12px;
+  flex-wrap:wrap;
+  padding:8px 16px;
+  background:var(--paper-2);
+  border-bottom:1px solid var(--line);
+}
+.code-name{
+  font-family:var(--font-mono);
+  font-size:var(--fs-75);
+  color:var(--ink-2);
+}
+.code-lang{
+  margin-left:auto;
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink-3);
+}
+.code-copy{
+  flex:none;
+  display:inline-flex; align-items:center; gap:6px;
+  background:transparent; border:1px solid transparent;
+  border-radius:6px;
+  color:var(--ink-3);
+  font-family:var(--font-mono); font-size:11px;
+  letter-spacing:.08em;
+  padding:2px 8px;
+  cursor:pointer;
+  transition:color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.code-copy::before{
+  content:""; width:9px; height:9px;
+  border:1.5px solid currentColor; border-radius:2px;
+  box-shadow:2.5px -2.5px 0 -0.5px var(--code-bg), 2.5px -2.5px 0 0 currentColor;
+}
+.code-copy:hover{ color:var(--ink); border-color:var(--line-2); background:var(--paper); }
+.code-copy.done{ color:var(--success); border-color:color-mix(in srgb, var(--success) 40%, transparent); }
+.code-copy.done::before{ border-color:transparent; box-shadow:none; }
+
+.code-wrap pre{
+  margin:0;
+  padding:14px 18px;
+  overflow-x:auto;
+  font-family:var(--font-mono);
+  font-size:var(--fs-100);
+  line-height:1.7;
+  color:var(--code-ink);
+  tab-size:4;
+}
+.code-wrap pre::-webkit-scrollbar{ height:8px; }
+.code-wrap pre::-webkit-scrollbar-thumb{ background:var(--line-2); border-radius:4px; }
+.code-wrap pre::-webkit-scrollbar-track{ background:transparent; }
+.sidenav::-webkit-scrollbar{ width:8px; }
+.sidenav::-webkit-scrollbar-thumb{ background:var(--line-2); border-radius:4px; }
+.code-wrap pre code{ font-family:inherit; background:none; padding:0; color:inherit; }
+.tok-k{ color:var(--tok-key); }
+.tok-s{ color:var(--tok-str); }
+.tok-n{ color:var(--tok-num); }
+.tok-c{ color:var(--tok-com); font-style:italic; }
+.tok-f{ color:var(--tok-fn); }
+
+/* ---------- 7. 提示框：软色卡片 ---------- */
+.callout{
+  display:flex; gap:12px; align-items:flex-start;
+  margin:var(--gap-block) 0;
+  padding:14px 18px;
+  border:1px solid var(--line-2);
+  border-radius:var(--radius);
+  background:var(--paper-2);
+  font-size:var(--fs-100);
+  line-height:1.75;
+}
+.callout-icon{
+  flex:none;
+  display:grid; place-items:center;
+  width:24px; height:24px; margin-top:1px;
+  border-radius:8px;
+  color:var(--ink-3);
+  background:color-mix(in srgb, currentColor 10%, transparent);
+}
+.callout-icon svg{ width:14px; height:14px; display:block; }
+.callout-body{ flex:1; color:var(--ink); }
+.callout-body > * + *{ margin-top:8px; }
+.callout-title{
+  display:block;
+  font-weight:600; color:var(--ink-2);
+  margin-bottom:4px;
+}
+
+.callout[data-variant="info"]{
+  border-color:color-mix(in srgb, var(--accent) 26%, transparent);
+  background:color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.callout[data-variant="info"] .callout-icon,
+.callout[data-variant="info"] .callout-title{ color:var(--accent-strong); }
+.callout[data-variant="success"]{
+  border-color:color-mix(in srgb, var(--success) 28%, transparent);
+  background:color-mix(in srgb, var(--success) 6%, transparent);
+}
+.callout[data-variant="success"] .callout-icon,
+.callout[data-variant="success"] .callout-title{ color:var(--success); }
+.callout[data-variant="warning"]{
+  border-color:color-mix(in srgb, var(--warning) 30%, transparent);
+  background:color-mix(in srgb, var(--warning) 8%, transparent);
+}
+.callout[data-variant="warning"] .callout-icon,
+.callout[data-variant="warning"] .callout-title{ color:var(--warning); }
+.callout[data-variant="danger"]{
+  border-color:color-mix(in srgb, var(--danger) 28%, transparent);
+  background:color-mix(in srgb, var(--danger) 6%, transparent);
+}
+.callout[data-variant="danger"] .callout-icon,
+.callout[data-variant="danger"] .callout-title{ color:var(--danger); }
+
+/* ---------- 8. 表格（表上图下；细斑马纹 + 悬停反馈） ---------- */
+.table-wrap{
+  margin:0 0 var(--gap-block);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  overflow-x:auto;
+}
+.prose table{
+  width:100%; border-collapse:collapse;
+  font-size:var(--fs-100);
+  line-height:1.6;
+  font-variant-numeric:tabular-nums;
+}
+.prose th{
+  padding:10px 16px;
+  text-align:left;
+  font-size:var(--fs-75);
+  font-weight:600;
+  letter-spacing:.04em;
+  color:var(--ink-2);
+  background:var(--paper-2);
+  border-bottom:1px solid var(--line-2);
+  white-space:nowrap;
+}
+.prose td{
+  padding:10px 16px;
+  border-bottom:1px solid var(--line);
+  vertical-align:top;
+}
+.prose tbody tr:nth-child(even) td{
+  background:color-mix(in srgb, var(--paper-2) 55%, transparent);
+}
+.prose tbody tr:last-child td{ border-bottom:none; }
+.prose tbody tr:hover td{ background:color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+.prose td code{ white-space:nowrap; }
+.table-cap{
+  margin:var(--gap-block) 0 10px;
+  text-align:center;
+  font-size:var(--fs-75);
+  color:var(--ink-3);
+}
+.prose .table-cap{ text-align:center; }
+/* 提示框 / 术语框内的内层表格：更紧凑的节奏 */
+.callout .table-cap, .defn .table-cap, .answer .table-cap{ margin-top:var(--gap-para); }
+.callout .table-wrap, .defn .table-wrap, .answer .table-wrap{ margin-bottom:var(--gap-para); }
+
+/* ---------- 9. 插图 ---------- */
+.diagram{ margin:var(--gap-block) 0; text-align:center; }
+.diagram .dg{
+  display:block;
+  margin:0 auto;
+  width:auto; max-width:100%;
+  height:auto;
+}
+.diagram figcaption{
+  margin-top:10px;
+  font-size:var(--fs-75);
+  color:var(--ink-3);
+}
+.diagram figcaption b{ font-weight:600; color:var(--ink-2); }
+
+/* ---------- 10. 术语定义与答案折叠 ---------- */
+.defn{
+  margin:var(--gap-block) 0;
+  padding:14px 18px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  background:var(--paper-2);
+}
+.defn-name{
+  font-family:var(--font-mono);
+  font-weight:600;
+  font-size:var(--fs-125);
+  color:var(--ink);
+}
+.defn-tag{
+  display:inline-block;
+  margin-left:8px;
+  padding:1px 8px;
+  border-radius:999px;
+  border:1px solid var(--line-2);
+  font-size:11px;
+  color:var(--ink-3);
+  vertical-align:2px;
+}
+.defn-first{
+  margin:2px 0 8px;
+  font-family:var(--font-mono);
+  font-size:var(--fs-75);
+  color:var(--ink-3);
+  letter-spacing:.04em;
+}
+.defn p{ margin:0 0 var(--gap-para); }
+.defn p:last-child{ margin-bottom:0; }
+
+.prose details.answer{
+  margin:var(--gap-tight) 0 var(--gap-block);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  background:var(--paper);
+}
+.prose details.answer > summary{
+  cursor:pointer;
+  padding:10px 16px;
+  font-size:var(--fs-100);
+  color:var(--ink-2);
+  list-style:none;
+  user-select:none;
+}
+.prose details.answer > summary::-webkit-details-marker{ display:none; }
+.prose details.answer > summary::before{
+  content:"+";
+  display:inline-block;
+  width:1.1em;
+  color:var(--accent);
+  font-family:var(--font-mono);
+}
+.prose details.answer[open] > summary::before{ content:"–"; }
+.prose details.answer > summary:hover{ color:var(--accent-strong); background:var(--paper-2); }
+.prose details.answer[open] > summary{ border-bottom:1px solid var(--line); }
+.prose details.answer > *:not(summary){
+  margin-left:16px;
+  margin-right:16px;
+}
+.prose details.answer > *:last-child{ margin-bottom:16px; }
+
+/* ---------- 11. 翻页器与页脚 ---------- */
+.pager{
+  display:flex; gap:16px;
+  max-width:calc(var(--measure) + 96px);
+  margin:56px auto 0;
+  padding:20px 48px 0;
+  border-top:1px solid var(--line);
+}
+.pager a, .pager > span{
+  flex:1;
+  display:flex; flex-direction:column; gap:2px;
+  padding:12px 16px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  background:var(--paper);
+  color:var(--ink-2);
+  transition:border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.pager > span{ visibility:hidden; }
+.pager .next{ text-align:right; }
+.pager a:hover{
+  color:var(--accent-strong); text-decoration:none;
+  border-color:color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow:0 2px 8px rgba(47,95,163,.08);
+}
+.pager-dir{ font-size:var(--fs-75); color:var(--ink-3); }
+.pager a:hover .pager-dir{ color:var(--accent); }
+.pager-title{ font-weight:600; font-size:var(--fs-125); }
+
+.footer{
+  max-width:calc(var(--measure) + 96px);
+  margin:0 auto;
+  width:100%;
+  padding:16px 48px 40px;
+}
+.footer-inner{
+  border-top:1px solid var(--line);
+  padding-top:16px;
+  display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  font-size:var(--fs-75);
+  color:var(--ink-3);
+}
+.footer-line, .footer-dim{ margin:0; }
+.footer-meta{ margin:0; font-family:var(--font-mono); letter-spacing:.04em; }
+.badge{
+  display:inline-block;
+  padding:1px 8px;
+  border:1px solid var(--line-2);
+  border-radius:999px;
+  font-size:11px;
+  color:var(--ink-3);
+}
+
+.back-top{
+  position:fixed; right:24px; bottom:24px; z-index:40;
+  width:40px; height:40px;
+  border:1px solid var(--line-2);
+  border-radius:999px;
+  background:var(--paper);
+  color:var(--ink-2);
+  cursor:pointer;
+  display:grid; place-items:center;
+  opacity:0; pointer-events:none;
+  transition:opacity var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  box-shadow:0 1px 4px rgba(20,30,40,.08);
+}
+.back-top.show{ opacity:1; pointer-events:auto; }
+.back-top:hover{ color:var(--accent); border-color:var(--accent); }
+
+/* ---------- 12. 封面 ---------- */
+.hero{
+  padding:16px 0 48px;
+  text-align:center;
+}
+.hero-inner{ max-width:640px; margin:0 auto; padding:0 24px; }
+.hero-kicker{
+  margin:0 0 18px;
+  font-family:var(--font-mono);
+  font-size:var(--fs-75);
+  letter-spacing:.18em;
+  color:var(--ink-3);
+}
+.hero-title{
+  margin:0 0 20px;
+  font-size:3.25rem;
+  font-weight:600;
+  line-height:1.15;
+}
+.hero-accent{ color:var(--accent); }
+.hero-sub{
+  margin:0 auto 28px;
+  max-width:560px;
+  color:var(--ink-2);
+  font-size:var(--fs-125);
+}
+.prose .hero-kicker,
+.prose .hero-sub{ text-align:center; }
+.hero-meta{
+  display:flex; justify-content:center; gap:8px; flex-wrap:wrap;
+  margin-bottom:32px;
+}
+.chip{
+  display:inline-block;
+  padding:3px 12px;
+  border:1px solid var(--line-2);
+  border-radius:999px;
+  font-size:var(--fs-75);
+  color:var(--ink-2);
+}
+.chip-brand{
+  border-color:color-mix(in srgb, var(--accent) 35%, transparent);
+  color:var(--accent);
+  background:var(--accent-soft);
+}
+.hero-actions{
+  display:flex; justify-content:center; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.btn{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:9px 22px;
+  border-radius:8px;
+  font-size:var(--fs-125);
+  font-weight:600;
+}
+.btn:hover{ text-decoration:none; }
+.btn-primary{ background:var(--accent); color:var(--paper); box-shadow:0 1px 3px rgba(36,73,125,.28); }
+.btn-primary:hover{ background:var(--accent-strong); color:var(--paper); }
+.btn-ghost{ border:1px solid var(--line-2); color:var(--ink-2); }
+.btn-ghost:hover{ border-color:var(--accent); color:var(--accent-strong); }
+.hero-hint{
+  font-size:var(--fs-75);
+  color:var(--ink-3);
+}
+
+/* ---------- 13. 卡片网格（目录页） ---------- */
+.card-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+  gap:14px;
+  margin:var(--gap-block) 0;
+}
+.card{
+  display:flex; flex-direction:column; gap:6px;
+  padding:16px 18px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  color:var(--ink);
+  transition:border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.card:hover{
+  border-color:var(--accent);
+  text-decoration:none;
+  box-shadow:0 2px 10px rgba(30,50,80,.07);
+}
+.card-num{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:.12em;
+  color:var(--ink-3);
+}
+.card-title{ font-weight:600; font-size:var(--fs-125); }
+.card-desc{
+  font-size:var(--fs-100);
+  color:var(--ink-2);
+  line-height:1.6;
+}
+.card-meta{ font-size:var(--fs-75); color:var(--ink-3); }
+
+/* ---------- 14. 插图内部样式（diagrams.py 发射的 dg-* 类） ---------- */
+.diagram .dg-edge{ fill:none; stroke:var(--ink-2); stroke-width:1.2; }
+.diagram .dg-arrhead{ fill:var(--ink-2); }
+.diagram .dg-node{ fill:var(--paper); stroke:var(--ink); stroke-width:1; }
+.diagram .dg-node-ext{ fill:var(--paper); stroke:var(--dg-ext); stroke-width:1.2; }
+.diagram .dg-chip{ fill:none; stroke:var(--line-2); stroke-width:.8; }
+.diagram .dg-tag{ font-family:var(--font-mono); font-size:var(--fs-75); fill:var(--ink-3); }
+.diagram .dg-badge{ font-family:var(--font-mono); font-size:var(--fs-75); fill:var(--ink-3); }
+.diagram .dg-name{ font-family:var(--font-sans); font-size:var(--fs-75); font-weight:600; fill:var(--ink); }
+.diagram .dg-sub{ font-family:var(--font-mono); font-size:var(--fs-75); fill:var(--ink-2); }
+.diagram .dg-rule{ stroke:var(--line); stroke-width:.8; }
+.diagram .dg-legend{ font-family:var(--font-mono); font-size:var(--fs-75); fill:var(--ink-3); }
+.diagram .dg-focal .dg-node{ fill:var(--accent-soft); stroke:var(--accent); }
+.diagram .dg-focal .dg-chip{ stroke:color-mix(in srgb, var(--accent) 35%, transparent); }
+.diagram .dg-focal .dg-tag,
+.diagram .dg-focal .dg-badge{ fill:var(--accent-strong); }
+.diagram .dg-store .dg-node{ fill:color-mix(in srgb, var(--ink) 5%, var(--paper)); stroke:var(--ink-2); }
+.diagram .dg-opt .dg-node{ stroke:color-mix(in srgb, var(--ink) 30%, transparent); stroke-dasharray:4,3; }
+.diagram .dg-edge-opt{ stroke-dasharray:4,3; }
+/* 图内语义配色（PB-30）：白底 + 全彩描边，不加底色；灰虚线仍是中性（可选/预留）的正当表达 */
+.diagram .dg-bad .dg-node{ fill:var(--paper); stroke:var(--dg-bad); stroke-width:1.4; }
+.diagram .dg-bad .dg-chip{ stroke:var(--dg-bad); stroke-width:1.2; }
+.diagram .dg-edge--bad{ stroke:var(--dg-bad); stroke-width:1.4; stroke-dasharray:4,3; }
+.diagram .dg-new .dg-node{ fill:var(--paper); stroke:var(--dg-new); stroke-width:1.4; }
+.diagram .dg-new .dg-chip{ stroke:var(--dg-new); stroke-width:1.2; }
+.diagram .dg-mask{ fill:var(--paper); }
+.diagram .dg-elabel{ font-family:var(--font-mono); font-size:var(--fs-75); fill:var(--ink-2); }
+
+/* ---------- 15. 打印与强制色 ---------- */
+@media print{
+  .sidenav, .drawer-backdrop, .topbar, .back-top, .skip-link, .code-copy, .h-anchor, .pagerail, .theme-btn{ display:none !important; }
+  body{ background:#fff; }
+  .prose{ max-width:none; padding:0; border:none; }
+  .code-wrap, .table-wrap, .callout, .defn{ break-inside:avoid; }
+  body{ font-size:11pt; }
+}
+@media (forced-colors:active){
+  .callout, .code-wrap, .table-wrap, .defn, .card{ border:1px solid CanvasText; }
+  .topbar{ border-bottom:1px solid CanvasText; }
+}
+
+
+/* ===== 规范页专属组件（不进入书籍 CSS） ===== */
+.swatch-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:10px; margin:var(--gap-block) 0; }
+.swatch{ border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; font-size:var(--fs-75); }
+.swatch i{ display:block; height:52px; border-bottom:1px solid var(--line); }
+.swatch div{ padding:8px 12px; line-height:1.5; color:var(--ink-2); }
+.swatch b{ display:block; color:var(--ink); font-family:var(--font-mono); font-weight:600; font-size:12px; }
+.spec-rule{ display:flex; gap:14px; align-items:flex-start; margin:0 0 var(--gap-tight); padding:12px 16px; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper); }
+.spec-rule .rule-id{ flex:none; font-family:var(--font-mono); font-size:var(--fs-75); font-weight:600; color:var(--accent); background:var(--accent-soft); border-radius:6px; padding:2px 8px; margin-top:2px; }
+.spec-rule p{ margin:0; font-size:var(--fs-100); line-height:1.75; }
+.checklist{ list-style:none; padding:0; margin:0 0 var(--gap-para); }
+.checklist li{ padding-left:1.6em; position:relative; margin-bottom:8px; font-size:var(--fs-100); }
+.checklist li::before{ content:"✓"; position:absolute; left:0; color:var(--success); font-weight:700; }
+.mig-table td:first-child{ font-family:var(--font-mono); font-size:var(--fs-75); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#content">跳到正文</a>
+<header class="topbar">
+  <button class="toc-btn" id="tocBtn" type="button" aria-controls="drawer" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>目录
+  </button>
+  <a class="topbar-title" href="#">素卷 · Plain Book</a>
+  <span class="topbar-chap">设计系统规范</span>
+  <button class="theme-btn" id="themeBtn" type="button" aria-label="切换墨版 / 纸面">
+    <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.9 4.9l1.4 1.4"/><path d="M17.7 17.7l1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.9 19.1l1.4-1.4"/><path d="M17.7 6.3l1.4-1.4"/></svg>
+  </button>
+</header>
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<aside class="sidenav" id="drawer" aria-label="规范目录">
+  <div class="side-head">
+    <a class="side-brand" href="#">素卷 · Plain Book<small>设计系统 v1.0</small></a>
+    <button class="drawer-close" id="drawerClose" type="button" aria-label="关闭目录"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+  </div>
+  <p class="side-part">导览</p>
+  <a class="ch-link" href="#p0">0 · 设计立场</a>
+  <p class="side-part">令牌</p>
+  <a class="ch-link" href="#p1">1 · 色彩</a>
+  <a class="ch-link" href="#p2">2 · 字阶与间距</a>
+  <a class="ch-link" href="#p3">3 · 布局尺度</a>
+  <p class="side-part">版式</p>
+  <a class="ch-link" href="#p4">4 · 章头与节奏</a>
+  <p class="side-part">组件</p>
+  <a class="ch-link" href="#p5">5 · 代码</a>
+  <a class="ch-link" href="#p6">6 · 提示框</a>
+  <a class="ch-link" href="#p7">7 · 表格与插图</a>
+  <a class="ch-link" href="#p8">8 · 折叠、翻页与封面</a>
+  <p class="side-part">收束</p>
+  <a class="ch-link" href="#p9">9 · 自检清单</a>
+</aside>
+<nav class="pagerail" aria-label="本页大纲">
+  <p class="pagerail-head">本页</p>
+  <a href="#p0">0 · 设计立场</a>
+  <a href="#p1">1 · 色彩</a>
+  <a href="#p2">2 · 字阶与间距</a>
+  <a href="#p3">3 · 布局尺度</a>
+  <a href="#p4">4 · 章头与节奏</a>
+  <a href="#p5">5 · 代码</a>
+  <a href="#p6">6 · 提示框</a>
+  <a href="#p7">7 · 表格与插图</a>
+  <a href="#p8">8 · 折叠、翻页与封面</a>
+  <a href="#p9">9 · 自检清单</a>
+</nav>
+<main class="main" id="content">
+<div class="prose">
+
+<div class="chapter-head">
+  <p class="chapter-kicker">PLAIN BOOK v1.0 · 单文件规范 · 本页即活样张</p>
+  <h1 class="chapter-title">素卷 · Plain Book</h1>
+  <p class="chapter-lead">一本给程序员读的 C++ 书，在 1280px 量级的屏幕上长读。本文件即规范：页面上看到的一切，就是书籍页面得到的一切——规范正文与书籍 <code>assets/style.css</code> 逐字同源。</p>
+</div>
+
+<section id="p0">
+<h2><span class="h-num">0</span>设计立场</h2>
+<p>素卷把书页当<strong>文档站</strong>设计——工程师每天读的 MDN / GitHub Docs 那种安静样子。书页不是礼仪品：没有进度条、没有章节下拉、没有深墨代码浮版，没有印章与题花——页面上出现的每一个元件都必须有职能，层次只来自字阶、间距与发丝线。</p>
+<div class="spec-rule"><span class="rule-id">原则一</span><p><strong>零装饰。</strong>层次只来自字阶、间距、发丝线。印章、描金、题花、进度条、圆点、圆环返回钮——一切无职能的元件都不许出现。</p></div>
+<div class="spec-rule"><span class="rule-id">原则二</span><p><strong>单栏独占，导航按需。</strong>正文单栏居中、独占全屏——阅读时零干扰。导航恰有两条：全书导航收进顶部「目录」按钮唤出的抽屉（书 → 章 → 节三级），答「往哪跳」；宽屏（≥1360px）右侧常驻「本页」大纲细轨、滚动跟随，答「读到哪了」。其余一切导航形式禁止。</p></div>
+<div class="spec-rule"><span class="rule-id">原则三</span><p><strong>代码属于纸面。</strong>浅底细框（GitHub-light 系），绝不在白纸长文里嵌深色浮版——深浅反复切换造成的眩光泵动，是长读疲劳的第一根源。</p></div>
+</section>
+
+<section id="p1">
+<h2><span class="h-num">1</span>色彩</h2>
+<p>近单色墨系 + 一个静墨蓝。页面 95% 的面积是纸与墨；蓝只出现在链接、节号、激活态三处。语义三色只进状态组件，绝不参与装饰。下表为纸面取值；墨版整组翻转见 PB-31。</p>
+<div class="swatch-grid">
+  <div class="swatch"><i style="background:#FFFFFF"></i><div><b>--paper #FFFFFF</b>页面底色</div></div>
+  <div class="swatch"><i style="background:#F7F8F9"></i><div><b>--paper-2 #F7F8F9</b>表头 / 代码底 / note 底</div></div>
+  <div class="swatch"><i style="background:#1E262B"></i><div><b>--ink #1E262B</b>正文 15.5:1</div></div>
+  <div class="swatch"><i style="background:#4E5A61"></i><div><b>--ink-2 #4E5A61</b>次要 7.6:1</div></div>
+  <div class="swatch"><i style="background:#7D8890"></i><div><b>--ink-3 #7D8890</b>弱化 4.6:1</div></div>
+  <div class="swatch"><i style="background:#E7EAEC"></i><div><b>--line #E7EAEC</b>发丝线</div></div>
+  <div class="swatch"><i style="background:#2F5FA3"></i><div><b>--accent #2F5FA3</b>静墨蓝 ≤5%</div></div>
+  <div class="swatch"><i style="background:#EDF3FA"></i><div><b>--accent-soft</b>激活底色</div></div>
+  <div class="swatch"><i style="background:#1A7F37"></i><div><b>--success</b>仅状态组件</div></div>
+  <div class="swatch"><i style="background:#9A6700"></i><div><b>--warning</b>仅状态组件</div></div>
+  <div class="swatch"><i style="background:#CF222E"></i><div><b>--danger</b>仅状态组件</div></div>
+  <div class="swatch"><i style="background:#CF222E"></i><div><b>--tok-key #CF222E</b>关键字</div></div>
+  <div class="swatch"><i style="background:#0A3069"></i><div><b>--tok-str #0A3069</b>字符串</div></div>
+  <div class="swatch"><i style="background:#0550AE"></i><div><b>--tok-num #0550AE</b>数字</div></div>
+  <div class="swatch"><i style="background:#6E7781"></i><div><b>--tok-com #6E7781</b>注释·斜体</div></div>
+  <div class="swatch"><i style="background:#8250DF"></i><div><b>--tok-fn #8250DF</b>函数</div></div>
+</div>
+<div class="spec-rule"><span class="rule-id">PB-1</span><p>裸值只允许出现在 <code>:root</code>；组件一律 <code>var(--token)</code>。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-2</span><p>静墨蓝只给三处：正文链接、<code>.h-num</code> 节号、目录激活态。版面占比 ≤5%；再想要颜色时，用字重和间距解决。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-3</span><p>success / warning / danger 只出现在提示框与答案正误对照里；正文、表格、插图一律不用语义色。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-4</span><p>代码配色固定 GitHub-light 语义（关键字绯红、字符串藏蓝、数字湛蓝、注释灰斜体、函数紫），不自创花色——程序员对这套色的肌肉记忆就是协调本身。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-31</span><p><strong>墨版：整页翻转，绝不混排。</strong>深灰纸面（<code>#171B20</code> 级，不用纯黑）+ 米白墨字（<code>#E2E6EA</code> 级，不用纯白），防光晕、护长读；静墨蓝提亮一档保链接对比；代码与纸面同底，配色切 GitHub-dark 语义；图内语义描边同步提亮。默认跟随系统、手动切换即记忆，打印永远纸面。浅页里嵌深色代码板不是墨版，是眩光泵动——禁止。</p></div>
+</section>
+
+<section id="p2">
+<h2><span class="h-num">2</span>字阶与间距</h2>
+<p>7 级字阶、4 档间距，全部锁死。中文正文 17px / 1.8；文字列 720px 约 42 字/行，代码 / 表格 / 插图等组件占 840px 组件版心。</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>令牌</th><th>值</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td>--fs-300</td><td>36px / 600</td><td>章题（每章一枚）</td></tr>
+<tr><td>--fs-250</td><td>26px / 600</td><td>h2 节题，下发丝线</td></tr>
+<tr><td>--fs-200</td><td>20px / 600</td><td>h3，左侧蓝色记号条</td></tr>
+<tr><td>--fs-150</td><td>17px / 1.8</td><td>正文、h4</td></tr>
+<tr><td>--fs-125</td><td>15px</td><td>导语、翻页器、按钮、顶栏书名</td></tr>
+<tr><td>--fs-100</td><td>14px</td><td>表格、提示框、代码、目录按钮</td></tr>
+<tr><td>--fs-75</td><td>13px</td><td>kicker、题注、图例、元信息</td></tr>
+</tbody>
+</table>
+</div>
+<div class="spec-rule"><span class="rule-id">PB-5</span><p>间距近小远大四档：同族块 12px（li 之间）、段落 14px、段落与组件 24px、节与节 64px。禁止发明第五档。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-6</span><p>行内代码是<strong>中性浅灰片</strong>（#EFF2F4，86% 等宽）：不用品牌色、不加圆点、不上边框——它出现频率极高，必须安静。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-7</span><p>等宽字体只给代码、文件名、命令、kicker、题注等技术内容；中文正文永远黑体，全站不用衬线。中文段落与列表两端对齐（justify，方块字对齐后边缘整齐），标题、表题、封面简介、提示框保持左对齐或居中——窄容器不 justify。中文排印细则：强调与标题字重一律 600，配 <code>font-synthesis:none</code> 防 CJK 合成粗体发糊；避头尾用 <code>line-break:strict</code>；中西文间距交给 <code>text-autospace</code> 渐进增强，不手工插空格；标题 <code>text-wrap:balance</code>、正文 <code>text-wrap:pretty</code>；中文标题字距为 0，不用负值。</p></div>
+</section>
+
+<section id="p3">
+<h2><span class="h-num">3</span>布局尺度</h2>
+<div class="code-wrap"><div class="code-head"><span class="code-name">骨架</span><span class="code-lang">layout</span><button class="code-copy" type="button">复制</button></div>
+<pre><code>&lt;body&gt;                                 ← 桌面 --desk：页面底色
+&lt;header class="topbar"&gt;…&lt;/header&gt;    ← sticky 54px，桌面同色 + 发丝下缘
+&lt;div class="drawer-backdrop"&gt;&lt;/div&gt;  ← 半透明遮罩，默认隐身
+&lt;aside class="sidenav"&gt;…&lt;/aside&gt;      ← 白纸抽屉 300px，打开时投影浮起
+&lt;nav class="pagerail"&gt;…&lt;/nav&gt;        ← 本页大纲细轨：≥1360px 常驻右侧、滚动跟随
+&lt;main class="main" id="content"&gt;
+  &lt;div class="prose"&gt;…&lt;/div&gt;         ← 白纸页：白底 + 四边发丝框 + 一道气口投影，936px 居中落桌
+&lt;/main&gt;</code></pre></div>
+<div class="spec-rule"><span class="rule-id">PB-8</span><p>顶栏只放四样：目录按钮（发丝描边胶囊 + 三横线图标）、书名（链接回封面）、当前章（13px 灰，如 <code>CH.01 · 编译与开发环境</code>）、主题切换钮（月亮 / 太阳图标，纸面 ↔ 墨版）。≤760px 时当前章隐藏。抽屉常驻三级导航：书名 → 部分组标签 + 章链接 → 当前章的节目录；当前章高亮 <code>--accent-soft</code> 底，当前节滚动跟随（<code>.cur</code>）。抽屉永不放假装饰。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-9</span><p>正文单栏<strong>双档版心</strong>：正文 / 列表 / 引用落在 720px 文字列（17px 下约 42 字/行），代码 / 表格 / 插图 / 提示框等组件占 840px 组件版心，两档左缘对齐、只向右延展。桌面（--desk）与白纸页（.prose：白底 + 四边 1px 发丝框 + 一道 1px 气口投影）构成第一层图底关系，顶栏与桌面同色、纸页浮于其上；顶栏内距、翻页器、页脚与纸页<strong>同宽对齐</strong>，形成一条看得见的版心。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-10</span><p>抽屉开关四条通路都要有：按钮开合、右上 ✕、点遮罩、Esc；抽屉内任一链接被点击后自动关闭。禁用清单：进度条、章节下拉、悬浮章指示器、印章、描金、题花、装饰圆点、圆环返回钮、drop cap、卡片阴影堆叠。返回顶部保留但仅为 40px 发丝圆钮，滚过 640px 才出现。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-11</span><p>锚点定位用 <code>html{scroll-padding-top:70px}</code> 为 sticky 顶栏留位，不写 JS 补偿。≤760px 正文内距收到 20px；打印时顶栏、抽屉、遮罩、交互件全部退场。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-32</span><p>宽屏（≥1360px）常驻右侧「本页」大纲细轨：13px、176px 宽、左缘 2px 线，当前节滚动跟随（<code>.cur</code> 蓝字蓝线）；窄屏自动退场，导航交回抽屉。无 JS 时它是普通锚点列表，仍然可用。除抽屉与本轨外，不设第三种导航。</p></div>
+</section>
+
+<section id="p4">
+<h2><span class="h-num">4</span>章头与节奏</h2>
+<p>章头三级：kicker（等宽小字 <code>CH.01 · 第一部分 · 入门与基础</code>）→ 章题 36px → 导语至多两段（15px 次级色）。第 3 段起降为正文字号留在章头内，内容不删、字号降级。</p>
+<div class="spec-rule"><span class="rule-id">PB-12</span><p>每个 h2 是一节：节号 <code>.h-num</code> 静墨蓝等宽 + 节题 26px + 底部 1px 发丝线。发丝线是节与内容块之间<strong>唯一</strong>的分隔装置。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-13</span><p>h3 前距 40px 且左侧带 3px 静墨蓝记号条（与灰色引用竖线拉开）、h4 前距 28px，后距一律 10–12px：标题与其内容绑定，与上一块疏离。有序列表序号着蓝（ol &gt; li::marker），无序列表圆点保持灰。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-14</span><p>章节互引（如「第十二章」）用正文链接色自动连接，不做任何特殊徽标。</p></div>
+</section>
+
+<section id="p5">
+<h2><span class="h-num">5</span>代码</h2>
+<div class="code-wrap"><div class="code-head"><span class="code-name">hello.cpp</span><span class="code-lang">cpp</span><button class="code-copy" type="button">复制</button></div>
+<pre><code><span class="tok-k">#include</span> <span class="tok-s">&lt;iostream&gt;</span>
+<span class="tok-k">int</span> <span class="tok-f">main</span>() {
+    std::cout &lt;&lt; <span class="tok-s">"Hello, 素卷!"</span>&lt;&lt; <span class="tok-s">'\n'</span>;  <span class="tok-c">// 代码属于纸面</span>
+    <span class="tok-k">return</span> <span class="tok-n">0</span>;
+}</code></pre></div>
+<div class="spec-rule"><span class="rule-id">PB-15</span><p><strong>代码永远属于纸面</strong>：白底（<code>--code-bg #FFFFFF</code>）+ 1px <code>--code-line</code> 细框 + 10px 圆角，与纸面只隔一道描边。禁止灰底/深底代码板，禁止投影、青光、内描边。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-16</span><p>代码头为 --paper-2 洗色栏 + 发丝下缘，与白底代码形成块内层次；只保留三样有职能的元件：文件名（等宽 13px 墨色）、语言标签（11px 大写灰，右对齐）、复制钮（点击后「已复制」1.6s）。不使用 macOS 窗口圆点。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-17</span><p>代码正文 14px / 1.7 / 4 空格 tab；长行横向滚动，不许缩字号换行。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-28</span><p><strong>代码卡必须有名字。</strong>每个围栏都写 <code>caption="…"</code>，代码头名称槽不许空着——空名卡在评审里视同缺陷。命名规约：练习节 <code>练习 {ch}-{q} · 问题代码 / 答案示例</code>（多块加（二）（三））；主流程按类目前缀——终端命令 <code>命令行 · …</code>、程序输出 <code>程序输出 · …</code>、语言对照 <code>Python 对照 · …</code>，其余 cpp 块按语义起名。构建前无名围栏扫描必须归零。</p></div>
+</section>
+
+<section id="p6">
+<h2><span class="h-num">6</span>提示框</h2>
+<p>一律是<strong>软色卡片</strong>：整框 1px 同色系描边 + 5–8% 淡染底 + 图标与彩色标题，框内正文永远墨色。图标统一为「同色 10% 淡染圆角衬底 + 14px 描边图标」：note 铅笔、info 圆-i、success 对勾、warning 圆角三角、danger 八角止步——五档图形语义分明，永不混用文字当图标。五档分工——note 是高频「栏目型」，灰底灰线最安静；info 客观事实，蓝卡；success / warning / danger 是真状态，各自语义色卡。旁注同样是完整的盒子：描边与淡染缺一不可。</p>
+<div class="callout" data-variant="note">
+  <span class="callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
+  <div class="callout-body"><span class="callout-title">note · 补充说明</span>默认档。放「顺带一提」的背景与延伸，灰卡灰线——出现频率最高的框必须最安静。</div>
+</div>
+<div class="callout" data-variant="info">
+  <span class="callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="16" x2="12" y2="12"/><circle cx="12" cy="7.8" r="1.2" fill="currentColor" stroke="none"/></svg></span>
+  <div class="callout-body"><span class="callout-title">info · 信息</span>客观事实与版本信息：「该特性自 CMake 3.20 起可用」。蓝卡。</div>
+</div>
+<div class="callout" data-variant="success">
+  <span class="callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4.5 12.5 9.5 17.5 19.5 6.5"/></svg></span>
+  <div class="callout-body"><span class="callout-title">success · 推荐</span>可直接照抄的结论性建议。绿卡。</div>
+</div>
+<div class="callout" data-variant="warning">
+  <span class="callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><line x1="12" y1="9.5" x2="12" y2="13.5"/><circle cx="12" cy="17" r="1.2" fill="currentColor" stroke="none"/></svg></span>
+  <div class="callout-body"><span class="callout-title">warning · 注意</span>易踩的坑与未定义行为。琥珀卡。</div>
+</div>
+<div class="callout" data-variant="danger">
+  <span class="callout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.2 2h9.6L22 7.2v9.6L16.8 22H7.2L2 16.8V7.2L7.2 2Z"/><line x1="12" y1="7.5" x2="12" y2="13"/><circle cx="12" cy="16.6" r="1.2" fill="currentColor" stroke="none"/></svg></span>
+  <div class="callout-body"><span class="callout-title">danger · 危险</span>会造成实际损失的操作。红卡。</div>
+</div>
+<div class="spec-rule"><span class="rule-id">PB-18</span><p>同屏彩色提示框（success / warning / danger 合计）至多一个；要强调第二处，改写正文加 <code>strong</code>。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-19</span><p>提示框字号 14px / 1.75，比正文小一号——它是旁注，不是正文的一等公民。淡染底 5–8%、描边同色 26–30% 透明度，饱和度再高就越权成广告了。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-29</span><p><strong>提示框标题两种写法，相邻框必须独立成框。</strong>标题行写 <code>&gt; **[类型]**</code> 或 <code>&gt; **[类型] 副题**</code>（副题并入标题行，显示为「类型 · 副题」）。两个提示框之间无论隔空行、<code>&gt;</code> 独行还是直接换行，构建器都必须切成两框——吞并在页面上的表征就是正文里出现字面的加粗方括号伪标题，见到即缺陷。另：章首提示框的正文段落不参与导语抽取——章头按顶层块（div 深度配对）切分，不许把框内 &lt;p&gt; 当导语剥走。</p></div>
+</section>
+
+<section id="p7">
+<h2><span class="h-num">7</span>表格与插图</h2>
+<p class="table-cap">表 7-1 · dg 分型类目与语义</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>dg 类</th><th>语义</th><th>样式</th></tr></thead>
+<tbody>
+<tr><td>.dg-node</td><td>内部主体</td><td>纸底 + 1px 墨边</td></tr>
+<tr><td>.dg-node-ext</td><td>外部依赖 / 语言对照</td><td>白底 + 1.2px 紫边（--dg-ext）</td></tr>
+<tr><td>.dg-store</td><td>存储 / 状态</td><td>5% 墨染 + 墨边</td></tr>
+<tr><td>.dg-opt</td><td>可选 / 预留 / 未指定（中性）</td><td>白底 30% 墨边虚线</td></tr>
+<tr><td>.dg-bad</td><td>失效 / 悬垂 / UB / 丢数据</td><td>白底 + 1.4px 正红边（--dg-bad）</td></tr>
+<tr><td>.dg-new</td><td>新分配 / 新增成员</td><td>白底 + 1.4px 亮绿边（--dg-new）</td></tr>
+<tr><td>.dg-focal</td><td>入口焦点</td><td>accent-soft 洗底 + 蓝边，一图至多两枚</td></tr>
+<tr><td>.dg-chip + .dg-tag</td><td>名字标签</td><td>无底细框 + 等宽小字</td></tr>
+<tr><td>.dg-elabel + .dg-mask</td><td>边标签 + 遮罩</td><td>等宽小字衬纸底遮罩，离线 6–10px</td></tr>
+<tr><td>.dg-legend + .dg-rule</td><td>底部图例</td><td>发丝线分隔的沉底横条，总宽受校验、水平居中</td></tr>
+<tr><td>.dg-edge-opt</td><td>过境虚线</td><td>4,3 虚线——路过，不交互</td></tr>
+<tr><td>.dg-edge--bad</td><td>危险路径虚线</td><td>4,3 正红虚线 1.4px——指向失效 / 报错终点</td></tr>
+</tbody>
+</table>
+</div>
+<div class="spec-rule"><span class="rule-id">PB-20</span><p><strong>表上图下。</strong>题注由 <code>**表：题注**</code> 行生成（<code>表 N-M · 题注</code>），居中放在框上方、间距 10px；细框圆角容器 + <code>--paper-2</code> 表头 + 行发丝线，无竖线。偶数行铺 55% paper-2 细斑马纹，悬停洗 45% accent-soft，数字列等宽对齐。提示框 / 术语框 / 答案里的内层表格走同一编号器，按文档顺序计数——嵌套不重排。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-21</span><p>插图一律 SVG 线框（上表分型），图内文字不小于 13px。<strong>文字宽度按实测字腔计量</strong>（西文等宽 7.7px/字、CJK 14px/字、黑体西文 7.9px/字，向上取 4 的倍数），节点与标签盒随文字自适应——禁止手写 <code>w=</code> 把字压出框。图例沉底横条、覆盖图中每一种分型、总宽超画布即构建报错、整体水平居中；题注 13px 灰、居中。SVG 必须带原生 width/height（D-13 铁律保留）。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-22</span><p><strong>连线七则</strong>（借鉴 diagram-design）：① 不同轴节点连线一律正交肘线 + r=8 圆角，共轴才许直线，斜线打回；② 边标签离线 6–10px、衬不透明 <code>.dg-mask</code> 遮罩，遮罩不得压后画的节点——文字会碎成片段；③ 两条连线不共享路径、不上下压线，交叉处用跳线桥；④ 同一节点同一缘多线进出，挂点间距 ≥12px、平行线全程 ≥12px；⑤ 连线不穿非端点节点，几何上避不开的过境段必须虚线（<code>.dg-edge-opt</code>）；⑥ 箭头只落在真实终点，路过即无箭头；⑦ 走线与相邻文字（节点名、行标注等非边标签文字）外沿净距 ≥8px——2px 的擦边在 100% 缩放下读作压字（ch13 继承内存图实测翻车）。七则连同文字溢出、节点互叠、图例超宽、贴边一起在构建期由 <code>render()</code> 校验——报错即改，带病图进不了书。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-30</span><p><strong>图内语义配色：白底全彩描边，颜色只表义。</strong>三辅色——<code>--dg-bad #CF222E</code> 正红（失效 / 悬垂 / UB / 数据丢失）、<code>--dg-new #2DA44E</code> 亮绿（新分配 / 新增成员）、<code>--dg-ext #8250DF</code> 紫（外部系统 / 语言对照）。着色方式：<strong>框内不加底色，边框本身上色</strong>（节点 1.4px、签牌 1.2px、危险路径 1.4px 虚线），白底上全彩描边即醒目又不糊版面。五条军规：① 只染边框不染文字——图内文字永远墨色，箭头也保持墨色；② 框内一律白底，禁止语义底色淡染；③ 单图辅色 ≤2 主色相 + 蓝（focal），再多就退回墨色系；④ 灰虚线（opt）仍是中性语义（预留 / 未指定 / 过境 / 机制内正常释放）的正当表达——颜色是给真危险的，不许为好看把中性染成语义色；⑤ 图例如实分列每一种染色分型，构建期严格校验覆盖。</p></div>
+</section>
+
+<section id="p8">
+<h2><span class="h-num">8</span>折叠、翻页与封面</h2>
+<div class="spec-rule"><span class="rule-id">PB-23</span><p>练习答案用原生 <code>details.answer</code>：+ / – 前缀（等宽蓝），无边框底色变化，无 JS 依赖。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-24</span><p>术语定义 <code>.defn</code>：--paper-2 底细框卡，词头等宽 600，词性标签 11px 灰胶囊。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-25</span><p>翻页器与版心同宽、上缘发丝线；左右两侧 flex:1 等宽，<code>.next</code> 只用 <code>text-align:right</code> 对齐——<strong>禁用 margin-left:auto</strong>（它会吃掉自由空间让 flex:1 失效，把标题压成窄条）。无上一章时用 <code>visibility:hidden</code> 占位，且只隐藏直接子级。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-26</span><p>页脚一行：左书名右元信息（25 章 · 8 部分 · C++20 · 素卷 v1.0），上缘发丝线，无 ❦ 题花。</p></div>
+<div class="spec-rule"><span class="rule-id">PB-27</span><p>封面 = 居中 hero（kicker + 52px 章题 + 简介 + 数据胶囊 + 双按钮）+ 8 部分卡片网格。卡片只用于封面与目录，正文里禁止再出现卡片。</p></div>
+</section>
+
+<section id="p9">
+<h2><span class="h-num">9</span>自检清单</h2>
+<p>每次改动后逐项过；任何一条不过就不算过。</p>
+<ul class="checklist">
+<li>整页除链接 / 节号 / 激活态外无第二色相；同屏彩色提示框 ≤1</li>
+<li>没有灰底/深底代码板；所有代码块白底细框、GitHub-light 语义色</li>
+<li>没有进度条 / 下拉 / 悬浮指示器 / 印章 / 描金 / 题花 / 圆点</li>
+<li>顶部目录按钮可唤出抽屉：当前章高亮、当前节滚动跟随；✕ / 背景 / Esc / 选中链接即关闭</li>
+<li>墨版整页翻转：深灰纸面 + 米白墨字 + 代码同底（GitHub-dark 语义）；无浅深混排；打印永远纸面；默认跟随系统、手动切换即记忆</li>
+<li>≥1360px 右侧「本页」大纲轨滚动跟随；窄屏退场；抽屉仍是全书唯一导航入口</li>
+<li>桌面—白纸页图底清晰；正文单栏居中；顶栏 / 翻页器 / 页脚与纸页同宽；页脚徽标版本正确</li>
+<li>间距只用 12 / 14 / 24 / 64 四档；正文 17px / 1.8；文字列 ≤720px、组件版心 ≤840px</li>
+<li>所有 SVG 图带原生 width/height；节点分型正确、图例沉底且如实分列染色分型（PB-30）</li>
+<li>图内配色守 PB-30：白底全彩描边、框内无底色、文字永墨；中性状态（预留 / 未指定 / 机制内释放）不冒充危险色</li>
+<li>代码卡全部有名（caption 扫描归零）；无横向滚动条——审计须 await fonts.ready 且阈值 &gt;0（2px 溢出也画滚动条）</li>
+<li>提示框零吞并：ch*.html 无 &lt;strong&gt;[ 残留；md 与 html 框数对平；无空体框（框内正文可能只有列表、没有段落）</li>
+<li>无 JS 时：全书可读、可翻页、答案可展开（目录抽屉是增强，不是依赖）</li>
+<li>裸值只在 :root；新组件先找令牌，找不到再加令牌而不是写裸值</li>
+</ul>
+</section>
+
+</div>
+<footer class="footer">
+  <div class="footer-inner">
+    <p class="footer-line">素卷 · Plain Book 设计系统</p>
+    <p class="footer-meta">单文件规范 · <span class="badge">v1.0</span></p>
+  </div>
+</footer>
+</main>
+<script>
+/* 规范页脚本：目录抽屉 + 代码复制（与书籍 book.js 同款精简） */
+(function(){
+  var tocBtn = document.getElementById("tocBtn");
+  var drawer = document.getElementById("drawer");
+  var backdrop = document.getElementById("drawerBackdrop");
+  var closeBtn = document.getElementById("drawerClose");
+  function setDrawer(open){
+    document.body.classList.toggle("toc-open", open);
+    if(tocBtn) tocBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  if(tocBtn) tocBtn.addEventListener("click", function(){
+    setDrawer(!document.body.classList.contains("toc-open"));
+  });
+  if(closeBtn) closeBtn.addEventListener("click", function(){ setDrawer(false); });
+  if(backdrop) backdrop.addEventListener("click", function(){ setDrawer(false); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") setDrawer(false); });
+  if(drawer) drawer.addEventListener("click", function(e){
+    if(e.target && e.target.closest && e.target.closest("a")) setDrawer(false);
+  });
+
+  document.querySelectorAll(".code-copy").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var code = btn.closest(".code-wrap").querySelector("pre code");
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(code.innerText).then(function(){
+          btn.textContent = "已复制"; btn.classList.add("done");
+          setTimeout(function(){ btn.textContent = "复制"; btn.classList.remove("done"); }, 1600);
+        });
+      }
+    });
+  });
+
+  /* 墨版开关：手动选择持久化；未手动选择时跟随系统；打印永远纸面 */
+  var rootEl = document.documentElement;
+  var themeBtn = document.getElementById("themeBtn");
+  function applyTheme(t, persist){
+    rootEl.setAttribute("data-theme", t);
+    if(persist){ try{ localStorage.setItem("pb-theme", t); }catch(e){} }
+  }
+  if(themeBtn) themeBtn.addEventListener("click", function(){
+    applyTheme(rootEl.getAttribute("data-theme") === "dark" ? "light" : "dark", true);
+  });
+  try{
+    var mq = matchMedia("(prefers-color-scheme: dark)");
+    var onScheme = function(e){
+      var stored = null;
+      try{ stored = localStorage.getItem("pb-theme"); }catch(err){}
+      if(!stored) applyTheme(e.matches ? "dark" : "light", false);
+    };
+    if(mq.addEventListener) mq.addEventListener("change", onScheme);
+  }catch(e){}
+  var printedFrom = null;
+  window.addEventListener("beforeprint", function(){
+    printedFrom = rootEl.getAttribute("data-theme");
+    rootEl.removeAttribute("data-theme");
+  });
+  window.addEventListener("afterprint", function(){
+    if(printedFrom){ rootEl.setAttribute("data-theme", printedFrom); printedFrom = null; }
+  });
+
+  /* 右侧「本页」大纲：滚动跟随 */
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".pagerail a"));
+  var railSections = railLinks.map(function(a){
+    return document.querySelector(a.getAttribute("href"));
+  });
+  function spy(){
+    var cur = railSections[0] || null;   /* 页顶未过首条节线时，默认高亮首节 */
+    for(var i = 0; i < railSections.length; i++){
+      if(railSections[i] && railSections[i].getBoundingClientRect().top <= 140) cur = railSections[i];
+    }
+    railLinks.forEach(function(a, i){
+      a.classList.toggle("cur", !!(cur && railSections[i] === cur));
+    });
+  }
+  if(railLinks.length){ spy(); window.addEventListener("scroll", spy, { passive:true }); }
+})();
+</script>
+</body>
+</html>
