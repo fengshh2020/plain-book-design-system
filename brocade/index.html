@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light" data-scheme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="锦册 · Brocade Book v1.0 —— 组件化设计系统活样张：Tailwind CSS · daisyUI · Alpine.js · highlight.js · Lucide 全本地内置，六款 OKLCH 手调主题，断网可读。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%2337477B'/%3E%3Ctext x='50' y='73' font-size='58' text-anchor='middle' fill='%23FDFCFC' font-family='serif'%3E锦%3C/text%3E%3C/svg%3E">
+<title>锦册 · Brocade Book v1.0 — 组件化设计系统（活样张）</title>
+<!--
+  锦册 · Brocade Book v1.0 —— 组件化设计系统，本页即活样张。
+  设计以第三方框架/组件的原生形态与最佳阅读体验为第一要务；
+  可视化语义配色（白底全彩描边 + 连线七则 + dg 分型）整组继承自素卷。
+  依赖全部本地内置（assets/），无 CDN、无构建链、断网双击即可完整打开：
+    Tailwind CSS 4.3.3（browser）· daisyUI 5.7.47（full.css + themes.css 36 主题）
+    Alpine.js 3.17.4（+ Intersect）· highlight.js 11.12.0（github / github-dark）· Lucide 0.577.0
+-->
+<link rel="stylesheet" href="assets/daisyui.css">
+<link rel="stylesheet" href="assets/themes.css">
+<link rel="stylesheet" href="assets/hl-github.css" id="hlLight">
+<link rel="stylesheet" href="assets/hl-github-dark.css" id="hlDark" disabled>
+<script>
+/* 预绘定主题：本地记忆 → 系统偏好；?theme=<name> 强制（截图/深链用）。
+   书籍精选六款（OKLCH 手调，覆盖块见页内 <style>）：素 light / 缥 corporate / 皓 nord / 玄 dark / 檀 dim / 宵 night */
+(function(){
+  var JC_THEMES=["light","corporate","nord","dark","dim","night"];
+  var t="light";
+  try{
+    t=localStorage.getItem("jc-theme")||
+      (window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+  }catch(e){}
+  var q=location.search.match(/[?&]theme=([a-z0-9-]+)/);
+  if(q&&JC_THEMES.indexOf(q[1])>=0) t=q[1];
+  if(JC_THEMES.indexOf(t)<0) t="light";
+  document.documentElement.setAttribute("data-theme",t);
+})();
+</script>
+<script src="assets/tailwind.js"></script>
+<style type="text/tailwindcss">
+@theme {
+  --font-sans: -apple-system, "Segoe UI", "Helvetica Neue", "PingFang SC",
+               "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas,
+               "Sarasa Mono SC", "Microsoft YaHei", monospace;
+}
+</style>
+<style>
+/* ============ 锦册专属非色令牌 + CJK 排印（颜色一律来自 daisyUI 主题令牌）============ */
+:root{
+  --jc-measure: 880px;        /* 组件版心 */
+  --jc-measure-text: 720px;   /* 文字列（约 42 汉字/行） */
+  --jc-shadow: 0 1px 2px color-mix(in oklab, var(--color-base-content) 7%, transparent);
+  --jc-a-soft: 72%;           /* 软墨透明度（深色系档；浅色系在主题块内提档保对比） */
+  --jc-a-softer: 58%;
+}
+
+/* ============ 六款手调调色板（OKLCH）============
+   键沿用 daisyUI 主题名（?theme= 深链与本地记忆兼容），值全量覆盖为手调传统色：
+     素 su · 暖纸靛青 ｜ 缥 piao · 天缥青碧 ｜ 皓 hao · 皓白藏青（日间系）
+     玄 xuan · 玄墨琉璃 ｜ 檀 tan · 乌檀铜青 ｜ 宵 xiao · 宵蓝星辉（夜间系）
+   法度：中性阶定纸墨气质；主色克制约减（彩度 ≤0.11）；语义色守传统色相、
+   彩度 ≥0.09 保图内描边可辨（§10）；*-content 为实底填充上的文字色；
+   跨主题同亮度档对齐。对比度已按 WCAG 验算（墨/纸 ≥12.7、主色 ≥7.2、软墨 ≥4.5）。 */
+[data-theme="light"]{ color-scheme:light; --jc-a-soft:78%; --jc-a-softer:66%;
+  --color-base-100:oklch(98.3% .003 90);      /* 素纸 · 暖白 */
+  --color-base-200:oklch(96% .005 90);
+  --color-base-300:oklch(89% .006 90);
+  --color-base-content:oklch(25% .012 80);    /* 暖近黑墨 */
+  --color-primary:oklch(42% .105 258);        /* 靛青 */
+  --color-primary-content:oklch(98% .004 90);
+  --color-secondary:oklch(47% .118 335);      /* 藕荷 */
+  --color-secondary-content:oklch(98% .004 90);
+  --color-accent:oklch(48% .085 170);         /* 竹青 */
+  --color-accent-content:oklch(98% .004 90);
+  --color-neutral:oklch(34% .01 80);
+  --color-neutral-content:oklch(98% .004 90);
+  --color-info:oklch(50% .1 230);             /* 湖蓝 */
+  --color-info-content:oklch(98% .004 90);
+  --color-success:oklch(52% .14 150);         /* 松绿 */
+  --color-success-content:oklch(98% .004 90);
+  --color-warning:oklch(62% .11 88);          /* 缃黄 */
+  --color-warning-content:oklch(98% .004 90);
+  --color-error:oklch(52% .18 28);            /* 胭脂 */
+  --color-error-content:oklch(98% .004 90);
+}
+[data-theme="corporate"]{ color-scheme:light; --jc-a-soft:78%; --jc-a-softer:66%;
+  --color-base-100:oklch(97.8% .006 225);     /* 缥纸 · 天缥白 */
+  --color-base-200:oklch(95% .009 225);
+  --color-base-300:oklch(87.5% .014 225);
+  --color-base-content:oklch(26% .025 245);
+  --color-primary:oklch(43% .092 218);        /* 青碧 */
+  --color-primary-content:oklch(98% .004 90);
+  --color-secondary:oklch(46% .105 320);      /* 紫藤 */
+  --color-secondary-content:oklch(98% .004 90);
+  --color-accent:oklch(50% .085 140);         /* 松花 */
+  --color-accent-content:oklch(98% .004 90);
+  --color-neutral:oklch(35% .02 240);
+  --color-neutral-content:oklch(98% .004 90);
+  --color-info:oklch(52% .1 220);             /* 晴蓝 */
+  --color-info-content:oklch(98% .004 90);
+  --color-success:oklch(50% .115 155);        /* 苔绿 */
+  --color-success-content:oklch(98% .004 90);
+  --color-warning:oklch(63% .11 85);          /* 杏黄 */
+  --color-warning-content:oklch(98% .004 90);
+  --color-error:oklch(51% .16 27);            /* 洛神 */
+  --color-error-content:oklch(98% .004 90);
+}
+[data-theme="nord"]{ color-scheme:light; --jc-a-soft:78%; --jc-a-softer:66%;
+  --color-base-100:oklch(99.2% .001 90);      /* 皓纸 · 皓白 */
+  --color-base-200:oklch(97.2% .002 90);
+  --color-base-300:oklch(91% .003 90);
+  --color-base-content:oklch(23.5% .01 75);
+  --color-primary:oklch(41% .09 270);         /* 藏青 */
+  --color-primary-content:oklch(98.5% .003 90);
+  --color-secondary:oklch(46% .11 328);       /* 青莲 */
+  --color-secondary-content:oklch(98.5% .003 90);
+  --color-accent:oklch(48% .08 165);          /* 黛绿 */
+  --color-accent-content:oklch(98.5% .003 90);
+  --color-neutral:oklch(33% .008 75);
+  --color-neutral-content:oklch(98.5% .003 90);
+  --color-info:oklch(50% .1 228);             /* 汉蓝 */
+  --color-info-content:oklch(98.5% .003 90);
+  --color-success:oklch(51% .135 152);        /* 翠 */
+  --color-success-content:oklch(98.5% .003 90);
+  --color-warning:oklch(62% .11 88);          /* 秋香 */
+  --color-warning-content:oklch(98.5% .003 90);
+  --color-error:oklch(51% .175 28);           /* 朱砂 */
+  --color-error-content:oklch(98.5% .003 90);
+}
+[data-theme="dark"]{ color-scheme:dark; --jc-a-soft:72%; --jc-a-softer:58%;
+  --color-base-100:oklch(20% .008 260);       /* 玄纸 · 玄墨 */
+  --color-base-200:oklch(24% .01 260);
+  --color-base-300:oklch(32% .012 260);
+  --color-base-content:oklch(90% .006 255);   /* 月白墨 */
+  --color-primary:oklch(73% .1 245);          /* 琉璃 */
+  --color-primary-content:oklch(20% .008 260);
+  --color-secondary:oklch(74% .105 330);      /* 紫藤月 */
+  --color-secondary-content:oklch(20% .008 260);
+  --color-accent:oklch(72% .09 175);          /* 竹月 */
+  --color-accent-content:oklch(20% .008 260);
+  --color-neutral:oklch(66% .01 260);
+  --color-neutral-content:oklch(20% .008 260);
+  --color-info:oklch(72% .1 215);             /* 湖光 */
+  --color-info-content:oklch(20% .008 260);
+  --color-success:oklch(70% .135 150);        /* 竹绿 */
+  --color-success-content:oklch(20% .008 260);
+  --color-warning:oklch(78% .115 90);         /* 鹅缃 */
+  --color-warning-content:oklch(20% .008 260);
+  --color-error:oklch(66% .165 25);           /* 榴花 */
+  --color-error-content:oklch(20% .008 260);
+}
+[data-theme="dim"]{ color-scheme:dark; --jc-a-soft:72%; --jc-a-softer:58%;
+  --color-base-100:oklch(21% .008 70);        /* 檀纸 · 乌檀 */
+  --color-base-200:oklch(25% .011 70);
+  --color-base-300:oklch(33% .013 70);
+  --color-base-content:oklch(89% .008 75);
+  --color-primary:oklch(72% .09 185);         /* 铜青 */
+  --color-primary-content:oklch(21% .008 70);
+  --color-secondary:oklch(72% .1 340);        /* 玫紫 */
+  --color-secondary-content:oklch(21% .008 70);
+  --color-accent:oklch(70% .085 140);         /* 苔绿 */
+  --color-accent-content:oklch(21% .008 70);
+  --color-neutral:oklch(65% .012 70);
+  --color-neutral-content:oklch(21% .008 70);
+  --color-info:oklch(70% .08 210);            /* 青灰 */
+  --color-info-content:oklch(21% .008 70);
+  --color-success:oklch(70% .12 150);         /* 青竹 */
+  --color-success-content:oklch(21% .008 70);
+  --color-warning:oklch(78% .11 85);          /* 缃黄 */
+  --color-warning-content:oklch(21% .008 70);
+  --color-error:oklch(67% .15 30);            /* 朱槿 */
+  --color-error-content:oklch(21% .008 70);
+}
+[data-theme="night"]{ color-scheme:dark; --jc-a-soft:72%; --jc-a-softer:58%;
+  --color-base-100:oklch(19% .016 265);       /* 宵纸 · 宵蓝 */
+  --color-base-200:oklch(23% .019 265);
+  --color-base-300:oklch(31% .022 265);
+  --color-base-content:oklch(90% .012 265);
+  --color-primary:oklch(75% .09 240);         /* 星蓝 */
+  --color-primary-content:oklch(19% .016 265);
+  --color-secondary:oklch(73% .09 320);       /* 兰紫 */
+  --color-secondary-content:oklch(19% .016 265);
+  --color-accent:oklch(74% .08 170);          /* 月绿 */
+  --color-accent-content:oklch(19% .016 265);
+  --color-neutral:oklch(67% .015 265);
+  --color-neutral-content:oklch(19% .016 265);
+  --color-info:oklch(73% .09 225);            /* 云蓝 */
+  --color-info-content:oklch(19% .016 265);
+  --color-success:oklch(71% .12 155);         /* 青碧 */
+  --color-success-content:oklch(19% .016 265);
+  --color-warning:oklch(80% .105 90);         /* 星黄 */
+  --color-warning-content:oklch(19% .016 265);
+  --color-error:oklch(67% .15 25);            /* 霞红 */
+  --color-error-content:oklch(19% .016 265);
+}
+.jc-page{ align-items:stretch; justify-content:flex-start; }
+
+/* 版心与文字列 */
+.jc-measure{ width:100%; max-width:var(--jc-measure); margin:0 auto; padding-inline:20px; }
+@media (min-width:640px){ .jc-measure{ padding-inline:28px; } }
+.jc-sec{ font-size:17px; font-variant-numeric:tabular-nums; }
+.jc-sec > p, .jc-sec > ul, .jc-sec > ol{ max-width:var(--jc-measure-text); }
+.jc-sec .table-cap{ max-width:none; }
+
+/* CJK 排印（自素卷整组继承） */
+html{ scroll-padding-top:84px; }
+@media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+body{ line-height:1.8; }
+:lang(zh) h1,:lang(zh) h2,:lang(zh) h3,:lang(zh) h4,:lang(zh) p,:lang(zh) li{ line-break:strict; }
+h1,h2,h3,h4{ text-wrap:balance; }
+.jc-sec p, .jc-sec li{ text-wrap:pretty; text-autospace:normal; }
+.jc-cjk{ hanging-punctuation:first last; }
+h1,h2,h3,h4,strong,b{ font-synthesis:none; }
+::selection{ background:var(--color-primary); color:var(--color-primary-content); }
+:focus-visible{ outline:2px solid var(--color-primary); outline-offset:2px; }
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:color-mix(in oklab, var(--color-base-content) 20%, transparent);
+  border-radius:5px; border:2px solid transparent; background-clip:padding-box; }
+
+/* 软色文本（令牌派生；透明度分浅/深两档，保 WCAG ≥4.5） */
+.jc-soft{ color:color-mix(in oklab, var(--color-base-content) var(--jc-a-soft), transparent); }
+.jc-softer{ color:color-mix(in oklab, var(--color-base-content) var(--jc-a-softer), transparent); }
+
+/* 微标签体系：题注旁注、时间轴刻度、展品行标……全页共用一款 */
+.jc-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) var(--jc-a-softer), transparent); }
+
+/* 节头：§ 节号与标题基线对齐 + 锚点，底缘发丝线 */
+.jc-sechead{ display:flex; align-items:baseline; gap:14px;
+  border-bottom:1px solid var(--color-base-300); padding-bottom:16px; margin-bottom:28px; }
+.jc-sechead h2{ line-height:1.35; }
+.jc-sec-num{ flex:none; width:46px; font-family:var(--font-mono); font-size:14px;
+  font-weight:600; letter-spacing:.04em; color:var(--color-primary); }
+.jc-anchor{ align-self:center; margin-left:auto; margin-right:-4px; padding:4px;
+  color:color-mix(in oklab, var(--color-base-content) 48%, transparent); transition:color .15s; }
+.jc-anchor:hover{ color:var(--color-primary); }
+
+/* 展品容器：全页统一的「细框 + 纸底 + 发丝影」 */
+.jc-ex{ border:1px solid var(--color-base-300); border-radius:var(--radius-box);
+  background:var(--color-base-100); overflow:hidden; box-shadow:var(--jc-shadow); }
+
+/* 规则条：编号列定宽对齐，条文左缘全页一条线（间距全走 4px 网格） */
+.jc-rule{ display:flex; gap:16px; padding:16px 0; border-top:1px solid var(--color-base-300); }
+.jc-rule-id{ flex:none; width:60px; display:inline-flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.06em;
+  color:var(--color-primary); background:color-mix(in oklab, var(--color-primary) 8%, transparent);
+  border:1px solid color-mix(in oklab, var(--color-primary) 22%, transparent);
+  border-radius:6px; padding:6px 0; height:auto; margin-top:4px; }
+.jc-rule p{ font-size:15px; line-height:1.75; }
+.jc-rule p code, .jc-sec p code, .jc-sec li code, .jc-cap code{
+  font-family:var(--font-mono); font-size:.86em;
+  background:color-mix(in oklab, var(--color-base-content) 8%, transparent);
+  border-radius:5px; padding:2px 6px; }
+
+/* 代码卡（hljs 双主题随 data-scheme 切换；代码纸即 hljs 主题自带底色） */
+.jc-code{ border:1px solid var(--color-base-300); border-radius:var(--radius-box);
+  overflow:hidden; background:var(--color-base-100); box-shadow:var(--jc-shadow); }
+.jc-code-head{ display:flex; align-items:center; gap:8px; padding:8px 12px;
+  background:var(--color-base-200); border-bottom:1px solid var(--color-base-300); }
+.jc-code-name{ display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--font-mono); font-size:13px; }
+.jc-code-lang{ font-family:var(--font-mono); font-size:11px; letter-spacing:.08em;
+  text-transform:uppercase; color:inherit; margin-left:auto; }
+.jc-code pre{ margin:0; overflow-x:auto; }
+.jc-code pre code.hljs{ font-family:var(--font-mono); font-size:14px; line-height:1.65;
+  padding:16px 20px; background:transparent; }  /* token 色归 hljs，纸底归主题 */
+html[data-scheme="dark"] .jc-code{ border-color:color-mix(in oklab, var(--color-base-content) 18%, transparent); }
+[x-cloak]{ display:none !important; }
+
+/* 表格：表头小号淡色，数字等宽 */
+.jc-sec table{ font-size:13.5px; }
+.jc-sec table th{ font-size:12px; font-weight:600; letter-spacing:.04em;
+  color:color-mix(in oklab, var(--color-base-content) var(--jc-a-softer), transparent); }
+.jc-sec table td{ font-variant-numeric:tabular-nums; }
+.stat-desc, .menu-title{ color:color-mix(in oklab, var(--color-base-content) var(--jc-a-softer), transparent); }
+
+/* 本页大纲轨（≥1400px） */
+.jc-rail{ position:fixed; right:24px; top:50%; transform:translateY(-50%); z-index:30;
+  width:186px; font-size:13px; line-height:1.5; }
+.jc-rail h3{ font-size:11px; letter-spacing:.14em; font-weight:600; margin-bottom:10px; }
+.jc-rail a{ display:block; padding:4px 0 4px 12px; border-left:2px solid var(--color-base-300);
+  color:color-mix(in oklab, var(--color-base-content) var(--jc-a-softer), transparent); text-decoration:none;
+  transition:color .15s, border-color .15s; }
+.jc-rail a:hover{ color:var(--color-base-content); }
+.jc-rail a.jc-cur{ color:var(--color-primary); border-left-color:var(--color-primary); font-weight:600; }
+
+/* 图标尺寸（Lucide，线宽 1.75 见页尾脚本） */
+svg.lucide{ width:20px; height:20px; }
+.menu svg.lucide{ width:18px; height:18px; }
+.jc-sun{ display:block; } .jc-moon{ display:none; }
+html[data-scheme="dark"] .jc-sun{ display:none; } html[data-scheme="dark"] .jc-moon{ display:block; }
+.jc-alert-ico svg.lucide{ width:22px; height:22px; }
+
+/* 章头：令牌渐变 + 织锦纹（1px 交叉细线，5% 主色，向下淡出） */
+.jc-hero{ position:relative; overflow:hidden; }
+.jc-hero::before{ content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    repeating-linear-gradient(45deg,  color-mix(in oklab, var(--color-primary) 5%, transparent) 0 1px, transparent 1px 16px),
+    repeating-linear-gradient(-45deg, color-mix(in oklab, var(--color-primary) 5%, transparent) 0 1px, transparent 1px 16px);
+  -webkit-mask-image:linear-gradient(to bottom, var(--color-base-content), transparent 72%);
+          mask-image:linear-gradient(to bottom, var(--color-base-content), transparent 72%); }
+.jc-hero > *{ position:relative; z-index:1; }
+
+/* 可视化（自素卷整组继承：白底全彩描边，颜色取主题令牌，随主题翻转） */
+.jc-fig{ border:1px solid var(--color-base-300); border-radius:var(--radius-box);
+  background:var(--color-base-100); padding:20px; box-shadow:var(--jc-shadow); }
+.jc-fig svg{ display:block; margin:0 auto; }
+.jc-fig svg text{ font-family:var(--font-mono); fill:var(--color-base-content); }
+.jc-figcap{ text-align:center; font-size:13px; margin-top:12px;
+  color:color-mix(in oklab, var(--color-base-content) 58%, transparent); }
+.jc-fig .dg-bad  { stroke:var(--color-error); }
+.jc-fig .dg-new  { stroke:var(--color-success); }
+.jc-fig .dg-ext  { stroke:var(--color-secondary); }
+.jc-fig .dg-bad-t{ fill:var(--color-error); }
+.jc-fig .dg-new-t{ fill:var(--color-success); }
+.jc-fig .dg-ext-t{ fill:var(--color-secondary); }
+.jc-fig .dg-edge { stroke:var(--color-base-content); fill:none; }
+.jc-fig .dg-arrow { fill:var(--color-base-content); stroke:none; }
+.jc-fig .dg-opt  { stroke:color-mix(in oklab, var(--color-base-content) 45%, transparent);
+  stroke-dasharray:4 3; fill:none; }
+.jc-fig .dg-bad-e{ stroke:var(--color-error); stroke-dasharray:4 3; fill:none; }
+.jc-fig .dg-box  { fill:var(--color-base-100); stroke:var(--color-base-content); }
+.jc-fig .dg-store{ fill:color-mix(in oklab, var(--color-base-content) 5%, var(--color-base-100)); }
+.jc-fig .dg-focal{ fill:var(--color-primary); fill-opacity:.08; stroke:var(--color-primary); }
+
+/* 打印：交互件退场，纸面恒为浅色 */
+@media print{
+  .navbar,.drawer-side,.drawer-overlay,.jc-rail,.btn,.dropdown,.toast{ display:none !important; }
+}
+
+/* 动效降级（前庭安全） */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{ transition-duration:.01ms !important; animation-duration:.01ms !important;
+    animation-iteration-count:1 !important; scroll-behavior:auto !important; }
+}
+
+/* 截图钩子 ?flat=1：解除 min-h 拉伸，让页脚落在自然流位置（整页高窗截取用） */
+.jc-flat .jc-page{ min-height:0; }
+</style>
+</head>
+<body class="bg-base-200 font-sans text-base-content jc-cjk">
+
+<div class="drawer">
+  <input id="nav-toggle" type="checkbox" class="drawer-toggle">
+
+  <div class="drawer-content flex flex-col min-h-screen jc-page"
+       x-data="{ active:'p0', tab:'cpp', toast:false,
+                 copyCode(el){
+                   var c = el.closest('.jc-code').querySelector('pre code');
+                   var t = el.querySelector('.jc-copy-t');
+                   if(navigator.clipboard && c){
+                     navigator.clipboard.writeText(c.innerText).then(()=>{
+                       this.toast = true; setTimeout(()=>this.toast=false, 1600);
+                       if(t){ t.textContent='已复制'; el.classList.add('text-success');
+                         setTimeout(()=>{ t.textContent='复制'; el.classList.remove('text-success'); }, 1600); }
+                     });
+                   }
+                 } }"
+       @keydown.escape.window="document.getElementById('nav-toggle').checked=false">
+
+    <!-- ================= 顶栏（navbar + glass） ================= -->
+    <header class="navbar sticky top-0 z-40 glass border-b border-base-300 text-base-content">
+      <div class="jc-measure flex items-center gap-2 w-full">
+        <label for="nav-toggle" class="btn btn-ghost btn-circle btn-sm" aria-label="打开目录">
+          <i data-lucide="menu"></i>
+        </label>
+        <div class="dropdown">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-sm px-2 font-semibold normal-case">
+            <i data-lucide="book-open" class="text-primary"></i>
+            锦册 <span class="jc-softer font-normal hidden sm:inline">Brocade Book</span>
+          </div>
+          <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-50 w-56 p-2 shadow-lg border border-base-300">
+            <li class="menu-title">本书两套体系</li>
+            <li><a href="#p1"><i data-lucide="feather"></i>锦册 · 组件化体系（本页）</a></li>
+            <li><a href="../plain/index.html"><i data-lucide="scroll"></i>素卷 · 单文件体系</a></li>
+          </ul>
+        </div>
+        <span class="badge badge-primary badge-outline badge-sm font-mono">v1.0</span>
+        <nav class="breadcrumbs text-sm hidden md:flex ml-2" aria-label="章节路径">
+          <ul>
+            <li><a href="#top" class="link link-hover">第一部分</a></li>
+            <li><a href="#top" class="link link-hover">CH.SPEC</a></li>
+            <li class="jc-soft">组件化体系</li>
+          </ul>
+        </nav>
+        <div class="ml-auto flex items-center gap-1">
+          <div class="tooltip tooltip-left" data-tip="五个依赖全部本地内置，断网可读">
+            <span class="btn btn-ghost btn-sm btn-circle pointer-events-auto" aria-label="离线可用">
+              <i data-lucide="wifi-off" class="jc-soft"></i>
+            </span>
+          </div>
+          <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-1" aria-label="切换主题">
+              <i data-lucide="swatch-book" class="text-primary"></i>
+              <span class="hidden sm:inline text-sm">主题</span>
+            </div>
+            <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-300">
+              <li class="menu-title">日间系</li>
+              <li><button onclick="jcApplyTheme('light')"><i data-lucide="sun"></i>素 · 暖纸靛青</button></li>
+              <li><button onclick="jcApplyTheme('corporate')"><i data-lucide="sun"></i>缥 · 天缥青碧</button></li>
+              <li><button onclick="jcApplyTheme('nord')"><i data-lucide="sun"></i>皓 · 皓白藏青</button></li>
+              <li class="menu-title">夜间系</li>
+              <li><button onclick="jcApplyTheme('dark')"><i data-lucide="moon"></i>玄 · 玄墨琉璃</button></li>
+              <li><button onclick="jcApplyTheme('dim')"><i data-lucide="moon"></i>檀 · 乌檀铜青</button></li>
+              <li><button onclick="jcApplyTheme('night')"><i data-lucide="moon"></i>宵 · 宵蓝星辉</button></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ================= 正文 ================= -->
+    <main id="top" class="jc-measure flex-1 pb-20">
+
+      <!-- ===== 章头 hero（渐变 + 织锦纹） ===== -->
+      <div class="jc-hero pt-16 pb-6 -mx-5 px-5 sm:-mx-7 sm:px-7 rounded-box bg-gradient-to-b from-primary/10 via-base-200 to-base-200">
+        <p class="jc-label !tracking-[.18em] text-primary flex items-center gap-2">
+          <i data-lucide="wand-sparkles" class="size-4!"></i>BROCADE BOOK v1.0 · 组件化设计系统 · 本页即活样张
+        </p>
+        <h1 class="text-4xl font-semibold mt-4">锦册 · Brocade Book</h1>
+        <p class="jc-soft mt-5 text-[16px] leading-[1.9] max-w-[720px]">
+          这套体系把书页交给第三方框架与组件：<strong>daisyUI</strong> 出组件与主题令牌，<strong>Tailwind</strong> 出原子排版，
+          <strong>Alpine.js</strong> 出轻交互，<strong>highlight.js</strong> 出代码着色，<strong>Lucide</strong> 出图标。
+          设计以它们的原生形态与最佳阅读体验为第一要务；从素卷整组继承的只有可视化语义配色（§10）。
+          右上「主题」可换六款书籍气质主题，整页令牌随之翻转。
+        </p>
+        <div class="flex flex-wrap gap-3 mt-7">
+          <a href="#p1" class="btn btn-primary btn-sm gap-2">从总则读起 <i data-lucide="arrow-right" class="size-4!"></i></a>
+          <a href="#p10" class="btn btn-outline btn-sm gap-2"><i data-lucide="shapes" class="size-4!"></i>可视化规范</a>
+          <a href="../plain/index.html" class="btn btn-ghost btn-sm gap-2"><i data-lucide="scroll" class="size-4!"></i>看素卷 · 单文件体系</a>
+        </div>
+        <div class="stats shadow bg-base-100 border border-base-300 mt-8 w-full">
+          <div class="stat py-4">
+            <div class="stat-figure text-primary"><i data-lucide="package"></i></div>
+            <div class="stat-title">本地依赖</div>
+            <div class="stat-value text-primary text-3xl tabular-nums">5</div>
+            <div class="stat-desc">vendored 固定版本</div>
+          </div>
+          <div class="stat py-4">
+            <div class="stat-figure text-secondary"><i data-lucide="library"></i></div>
+            <div class="stat-title">daisyUI 主题</div>
+            <div class="stat-value text-3xl tabular-nums">36</div>
+            <div class="stat-desc">精选 6 款随页切换</div>
+          </div>
+          <div class="stat py-4">
+            <div class="stat-figure text-primary"><i data-lucide="list-checks"></i></div>
+            <div class="stat-title">JC 规则</div>
+            <div class="stat-value text-3xl tabular-nums">28</div>
+            <div class="stat-desc">12 节 · 本页即样张</div>
+          </div>
+          <div class="stat py-4">
+            <div class="stat-figure text-success">
+              <div class="radial-progress text-success" style="--value:100;--size:2.6rem;" aria-hidden="true"></div>
+            </div>
+            <div class="stat-title">断网可用度</div>
+            <div class="stat-value text-3xl tabular-nums">100%</div>
+            <div class="stat-desc">无 CDN · 无构建</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 1 总则与整合链 ===== -->
+      <section id="p1" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p1'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§1</span>
+          <h2 class="text-[26px] font-semibold">总则与整合链</h2>
+          <a class="jc-anchor" href="#p1" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <p>三个库各司其职、单向叠加：Tailwind 负责版式原子，daisyUI 在其上提供组件与令牌，Alpine 只做行为增强，hljs / Lucide 负责两种专业渲染。页面加载链如下——</p>
+        <ul class="steps steps-vertical lg:steps-horizontal w-full mt-6">
+          <li class="step step-primary"><span class="text-xs font-mono">Tailwind 4</span></li>
+          <li class="step step-primary"><span class="text-xs font-mono">daisyUI 令牌+组件</span></li>
+          <li class="step step-primary"><span class="text-xs font-mono">Alpine 行为层</span></li>
+          <li class="step step-primary"><span class="text-xs font-mono">hljs · Lucide</span></li>
+        </ul>
+        <div class="mt-4">
+          <div class="jc-rule"><span class="jc-rule-id">JC-1</span><p><strong>组件优先。</strong>先在 daisyUI 组件清单里找（本页 §3「组件目录」逐一列出书籍允许的组件），找不到再用 Tailwind 原子类拼，仍然拼不出才写自定义结构。页面上每一块 UI 都要答得上「我来自哪个组件」。</p></div>
+          <div class="jc-rule"><span class="jc-rule-id">JC-2</span><p><strong>令牌驱动。</strong>颜色只从主题变量取（<code>bg-base-100</code>、<code>text-primary</code>……），软色用 <code>color-mix()</code> 从令牌派生；切换主题 = 更换令牌组，页面不许有任何一处颜色漏网。</p></div>
+          <div class="jc-rule"><span class="jc-rule-id">JC-3</span><p><strong>多主题同构。</strong>六款手调主题——素 / 缥 / 皓（日间）、玄 / 檀 / 宵（夜间）——共用同一 DOM 与间距，仅令牌不同（data-theme 键沿用 light / corporate / nord / dark / dim / night，兼容 <code>?theme=</code> 深链与本地记忆）；调色板以 OKLCH 手调（§2 法度），hljs 按 <code>color-scheme</code> 自动跟浅深两套着色。主题选择本地记忆，未选时跟随系统。</p></div>
+          <div class="jc-rule"><span class="jc-rule-id">JC-4</span><p><strong>全本地、零构建。</strong>五个依赖以固定版本 vendored 在 <code>assets/</code>，页面只引相对路径；禁外链 CDN、禁 Node 构建链。判断标准：断网双击 <code>framework/index.html</code>，页面完整成立。</p></div>
+        </div>
+      </section>
+
+      <!-- ===== 2 主题与令牌 ===== -->
+      <section id="p2" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p2'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§2</span>
+          <h2 class="text-[26px] font-semibold">主题与令牌</h2>
+          <a class="jc-anchor" href="#p2" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <p>语义色七枚 + 中性阶三级构成全套令牌。六款主题的调色板以 OKLCH 手调、各以一味传统色定气质：素（暖纸靛青）、缥（天缥青碧）、皓（皓白藏青）为日间系，玄（玄墨琉璃）、檀（乌檀铜青）、宵（宵蓝星辉）为夜间系。法度：中性阶定纸墨、主色克制约减（彩度 ≤0.11）、语义色守色相并保足彩度供图内描边（彩度 ≥0.09，见 §10），跨主题亮度档对齐、软墨透明度分浅深两档保对比。下表为「素」与「玄」两组基准值，右上「主题」菜单可即时预览全部六款。</p>
+        <p class="table-cap mt-6 text-center text-[13px] jc-softer">表 2-1 · 语义色令牌与用途（素 · light / 玄 · dark）</p>
+        <div class="jc-ex overflow-x-auto mt-2">
+          <table class="table table-zebra table-sm">
+            <thead><tr><th>令牌</th><th>素 · light</th><th>玄 · dark</th><th>书籍用途</th></tr></thead>
+            <tbody>
+              <tr><td class="font-mono">primary</td><td>靛青</td><td>琉璃蓝</td><td>链接 · 节号 · 焦点 · 图内焦点</td></tr>
+              <tr><td class="font-mono">secondary</td><td>藕荷</td><td>紫藤月</td><td>图内外部系统 / 语言对照</td></tr>
+              <tr><td class="font-mono">accent</td><td>竹青</td><td>竹月</td><td>点缀（书籍侧慎用）</td></tr>
+              <tr><td class="font-mono">info</td><td>湖蓝</td><td>湖光</td><td>信息提示框</td></tr>
+              <tr><td class="font-mono">success</td><td>松绿</td><td>竹绿</td><td>推荐提示 / 图内新增</td></tr>
+              <tr><td class="font-mono">warning</td><td>缃黄</td><td>鹅缃</td><td>注意提示</td></tr>
+              <tr><td class="font-mono">error</td><td>胭脂</td><td>榴花</td><td>危险提示 / 图内失效</td></tr>
+              <tr><td class="font-mono">base-100/200/300</td><td>暖白纸 → 灰</td><td>玄墨 → 深灰阶</td><td>纸面 / 洗色 / 边线</td></tr>
+              <tr><td class="font-mono">base-content</td><td>暖近黑墨</td><td>月白墨</td><td>正文（永不纯黑纯白）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+          <div class="jc-ex p-3"><div class="h-12 rounded ring-1 ring-base-content/10 bg-primary"></div><p class="font-mono text-xs mt-3">primary</p><p class="text-[11px] jc-softer mt-0.5">链接 · 节号 · 焦点</p></div>
+          <div class="jc-ex p-3"><div class="h-12 rounded ring-1 ring-base-content/10 bg-secondary"></div><p class="font-mono text-xs mt-3">secondary</p><p class="text-[11px] jc-softer mt-0.5">图内外部系统</p></div>
+          <div class="jc-ex p-3"><div class="h-12 rounded ring-1 ring-base-content/10 bg-success"></div><p class="font-mono text-xs mt-3">success</p><p class="text-[11px] jc-softer mt-0.5">图内新增成员</p></div>
+          <div class="jc-ex p-3"><div class="h-12 rounded ring-1 ring-base-content/10 bg-error"></div><p class="font-mono text-xs mt-3">error</p><p class="text-[11px] jc-softer mt-0.5">图内失效 / 危险</p></div>
+        </div>
+        <div class="jc-ex mt-6 px-5 py-4">
+          <div class="grid sm:grid-cols-[88px_1fr] gap-x-6 gap-y-4 items-center">
+            <span class="jc-label">badge</span>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="badge badge-primary">实底</span>
+              <span class="badge badge-primary badge-soft">soft</span>
+              <span class="badge badge-primary badge-outline">outline</span>
+              <span class="badge badge-primary badge-dash">dash</span>
+            </div>
+            <span class="jc-label">btn</span>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="btn btn-primary btn-xs">实底</span>
+              <span class="btn btn-primary btn-xs btn-soft">soft</span>
+              <span class="btn btn-primary btn-xs btn-outline">outline</span>
+              <span class="btn btn-primary btn-xs btn-dash">dash</span>
+            </div>
+          </div>
+        </div>
+        <div class="jc-rule mt-6"><span class="jc-rule-id">JC-5</span><p><strong>语义即语义，不许挪用。</strong>error 只给真危险、success 只给真新增、secondary 只给外部系统；「想强调」用 primary 的字重与描边。同屏语义色（success / warning / error 合计）至多一枚。</p></div>
+        <div class="jc-rule"><span class="jc-rule-id">JC-6</span><p><strong>变体修饰符按档位使用。</strong>daisyUI 的 <code>-soft / -outline / -dash</code> 与 <code>-sm / -md / -lg</code> 是组件自带的强度与尺寸档位：旁注用 soft、中性用 outline、可丢弃示意用 dash；同一区块内档位保持一致，不混搭出噪声。</p></div>
+        <div class="jc-rule"><span class="jc-rule-id">JC-7</span><p><strong>圆角、边框、阴影走令牌与组件默认。</strong><code>rounded-box / rounded-field / rounded</code> 三档按容器级差使用、同排展品同档；全页只许一种自定阴影——展品容器（表 / 图 / 代码 / diff）共用的 0 1px 2px 墨色 7% 发丝影（<code>--jc-shadow</code>，令牌派生）；玻璃效果只用 <code>glass</code> 工具类（顶栏），不另造阴影值。</p></div>
+      </section>
+
+      <!-- ===== 3 组件目录（书籍允许清单） ===== -->
+      <section id="p3" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p3'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§3</span>
+          <h2 class="text-[26px] font-semibold">组件目录</h2>
+          <a class="jc-anchor" href="#p3" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <p>书籍页面允许的 daisyUI 组件及用途映射；未列出的组件（chat / carousel / rating / dock / countdown 等）不进书页。本节全部为活样张，末列直达。</p>
+        <p class="table-cap mt-6 text-center text-[13px] jc-softer">表 3-1 · 组件 → 书籍用途映射</p>
+        <div class="jc-ex overflow-x-auto mt-2">
+          <table class="table table-zebra table-sm">
+            <thead><tr><th>组件</th><th>书籍用途</th><th class="text-right">样张</th></tr></thead>
+            <tbody>
+              <tr><td class="font-mono">navbar + glass</td><td>sticky 顶栏</td><td class="text-right"><a href="#top" class="link link-primary link-hover font-mono">顶栏</a></td></tr>
+              <tr><td class="font-mono">drawer + menu</td><td>全书目录抽屉</td><td class="text-right"><a href="#top" class="link link-primary link-hover font-mono">菜单钮</a></td></tr>
+              <tr><td class="font-mono">dropdown</td><td>主题切换 / 体系跳转</td><td class="text-right"><a href="#top" class="link link-primary link-hover font-mono">顶栏</a></td></tr>
+              <tr><td class="font-mono">breadcrumbs</td><td>部分 → 章 → 节路径</td><td class="text-right"><a href="#top" class="link link-primary link-hover font-mono">顶栏</a></td></tr>
+              <tr><td class="font-mono">alert</td><td>五档提示框</td><td class="text-right"><a href="#p5" class="link link-primary link-hover font-mono">§5</a></td></tr>
+              <tr><td class="font-mono">table-zebra</td><td>数据表</td><td class="text-right"><a href="#p6" class="link link-primary link-hover font-mono">§6</a></td></tr>
+              <tr><td class="font-mono">tabs</td><td>多文件代码切换</td><td class="text-right"><a href="#p4" class="link link-primary link-hover font-mono">§4</a></td></tr>
+              <tr><td class="font-mono">diff</td><td>问题代码 / 修正代码对照</td><td class="text-right"><a href="#p4" class="link link-primary link-hover font-mono">§4</a></td></tr>
+              <tr><td class="font-mono">collapse</td><td>练习答案折叠</td><td class="text-right"><a href="#p7" class="link link-primary link-hover font-mono">§7</a></td></tr>
+              <tr><td class="font-mono">steps / timeline</td><td>构建链 / 学习路径</td><td class="text-right"><a href="#p1" class="link link-primary link-hover font-mono">§1</a> / <a href="#p7" class="link link-primary link-hover font-mono">§7</a></td></tr>
+              <tr><td class="font-mono">join</td><td>章末翻页器</td><td class="text-right"><a href="#p7" class="link link-primary link-hover font-mono">§7</a></td></tr>
+              <tr><td class="font-mono">hero + card + stats</td><td>封面与目录网格</td><td class="text-right"><a href="#top" class="link link-primary link-hover font-mono">章头</a> / <a href="#p8" class="link link-primary link-hover font-mono">§8</a></td></tr>
+              <tr><td class="font-mono">toast / tooltip / kbd</td><td>复制反馈 / 悬注 / 按键</td><td class="text-right"><a href="#p4" class="link link-primary link-hover font-mono">§4</a> / <a href="#p5" class="link link-primary link-hover font-mono">§5</a></td></tr>
+              <tr><td class="font-mono">modal</td><td>插图点击放大</td><td class="text-right"><a href="#p10" class="link link-primary link-hover font-mono">§10</a></td></tr>
+              <tr><td class="font-mono">mockup-window</td><td>页面骨架演示框</td><td class="text-right"><a href="#p9" class="link link-primary link-hover font-mono">§9</a></td></tr>
+              <tr><td class="font-mono">status / skeleton / divider</td><td>行内状态 / 加载占位 / 分节</td><td class="text-right"><a href="#p11" class="link link-primary link-hover font-mono">§11</a> / <a href="#p12" class="link link-primary link-hover font-mono">§12</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="jc-rule mt-4"><span class="jc-rule-id">JC-8</span><p><strong>组件白名单制。</strong>上表即白名单；卡片（card）只进封面与目录，正文里禁止卡片栅格。进度条、章节下拉、悬浮指示器不进书页——阅读的节奏感由排版给，不由仪表盘给。</p></div>
+      </section>
+
+      <!-- ===== 4 代码（tabs 多文件 + diff 对照 + toast 反馈） ===== -->
+      <section id="p4" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p4'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§4</span>
+          <h2 class="text-[26px] font-semibold">代码</h2>
+          <a class="jc-anchor" href="#p4" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <p>多文件示例用 tabs 切换（daisy tabs + Alpine），复制成功用 toast 报告；同一练习的「问题 / 修正」用 diff 对照。</p>
+        <div class="mt-6">
+          <div role="tablist" class="tabs tabs-border">
+            <button role="tab" class="tab" :class="tab==='cpp' && 'tab-active'" :aria-selected="tab==='cpp'" :tabindex="tab==='cpp' ? 0 : -1" @click="tab='cpp'">hello.cpp</button>
+            <button role="tab" class="tab" :class="tab==='sh' && 'tab-active'" :aria-selected="tab==='sh'" :tabindex="tab==='sh' ? 0 : -1" @click="tab='sh'">build.sh</button>
+            <button role="tab" class="tab" :class="tab==='json' && 'tab-active'" :aria-selected="tab==='json'" :tabindex="tab==='json' ? 0 : -1" @click="tab='json'">tasks.json</button>
+          </div>
+          <div class="jc-code" x-show="tab==='cpp'" x-transition.opacity.duration.150ms>
+            <div class="jc-code-head">
+              <span class="jc-code-name"><i data-lucide="file-code-2" class="size-3.5! jc-softer"></i> hello.cpp</span><span class="jc-code-lang">cpp</span>
+              <button class="btn btn-ghost btn-xs jc-code-copy" @click="copyCode($el)">
+                <i data-lucide="copy" class="size-3.5!"></i><span class="jc-copy-t">复制</span>
+              </button>
+            </div>
+<pre><code class="language-cpp">#include &lt;iostream&gt;
+
+int main() {
+    std::cout &lt;&lt; "Hello, 锦册!" &lt;&lt; '\n';  // 代码属于纸面
+    return 0;
+}</code></pre>
+          </div>
+          <div class="jc-code" x-show="tab==='sh'" x-transition.opacity.duration.150ms x-cloak>
+            <div class="jc-code-head">
+              <span class="jc-code-name"><i data-lucide="file-code-2" class="size-3.5! jc-softer"></i> build.sh</span><span class="jc-code-lang">bash</span>
+              <button class="btn btn-ghost btn-xs jc-code-copy" @click="copyCode($el)">
+                <i data-lucide="copy" class="size-3.5!"></i><span class="jc-copy-t">复制</span>
+              </button>
+            </div>
+<pre><code class="language-bash">g++ -std=c++20 -Wall -Wextra hello.cpp -o hello
+./hello</code></pre>
+          </div>
+          <div class="jc-code" x-show="tab==='json'" x-transition.opacity.duration.150ms x-cloak>
+            <div class="jc-code-head">
+              <span class="jc-code-name"><i data-lucide="file-code-2" class="size-3.5! jc-softer"></i> tasks.json</span><span class="jc-code-lang">json</span>
+              <button class="btn btn-ghost btn-xs jc-code-copy" @click="copyCode($el)">
+                <i data-lucide="copy" class="size-3.5!"></i><span class="jc-copy-t">复制</span>
+              </button>
+            </div>
+<pre><code class="language-json">{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "build", "command": "g++ -std=c++20 hello.cpp -o hello" }
+  ]
+}</code></pre>
+          </div>
+        </div>
+        <div class="divider text-xs jc-softer font-mono">练习对照 · diff</div>
+        <div class="diff h-64 rounded-box border border-base-300 bg-base-100 jc-shadow" role="tabpanel" aria-label="问题代码与修正代码对照">
+          <div class="diff-item-1">
+            <div class="h-full px-5 py-4 font-mono text-[13px] leading-[1.9]"
+                 style="background:color-mix(in oklab, var(--color-error) 5%, var(--color-base-100))">
+              <div class="mb-2 flex items-baseline justify-between gap-4">
+                <span class="jc-softer text-[11px] tracking-[.1em] uppercase">问题代码 · problem</span>
+                <span class="jc-softer text-[11px]">↔ 拖动中缝对照</span>
+              </div>
+              <p class="flex items-baseline justify-between gap-4"><span>#include &lt;memory&gt;</span><span class="jc-softer">手工管理的信号</span></p>
+              <p class="flex items-baseline justify-between gap-4"><span>int main() {</span></p>
+              <p class="-mx-5 px-5 flex items-baseline justify-between gap-4" style="background:color-mix(in oklab, var(--color-error) 12%, transparent)"><span>&nbsp;&nbsp;<span class="text-error">int* p = new int[10];</span></span><span class="text-error/80">裸 new，所有权不明</span></p>
+              <p class="flex items-baseline justify-between gap-4"><span>&nbsp;&nbsp;// … 使用 p …</span></p>
+              <p class="-mx-5 px-5 flex items-baseline justify-between gap-4" style="background:color-mix(in oklab, var(--color-error) 12%, transparent)"><span>&nbsp;&nbsp;<span class="text-error">delete p;</span> <span class="badge badge-error badge-sm badge-dash">UB</span></span><span class="text-error/80">数组 new 配标量 delete → 未定义行为</span></p>
+              <p class="flex items-baseline justify-between gap-4"><span>&nbsp;&nbsp;return 0;</span></p>
+              <p class="flex items-baseline justify-between gap-4"><span>}</span></p>
+            </div>
+          </div>
+          <div class="diff-item-2">
+            <div class="h-full px-5 py-4 font-mono text-[13px] leading-[1.9]"
+                 style="background:color-mix(in oklab, var(--color-success) 5%, var(--color-base-100))">
+              <div class="mb-2 flex items-baseline justify-between gap-4">
+                <span></span>
+                <span class="jc-softer text-[11px] tracking-[.1em] uppercase">修正代码 · fixed</span>
+              </div>
+              <p class="flex items-baseline justify-between gap-4"><span><span class="text-success">#include &lt;vector&gt;</span></span><span class="jc-softer">容器的承诺：RAII</span></p>
+              <p class="flex items-baseline justify-between gap-4"><span>int main() {</span></p>
+              <p class="-mx-5 px-5 flex items-baseline justify-between gap-4" style="background:color-mix(in oklab, var(--color-success) 12%, transparent)"><span>&nbsp;&nbsp;<span class="text-success">std::vector&lt;int&gt; v(10);</span></span><span class="text-success/80">所有权随对象走</span></p>
+              <p class="flex items-baseline justify-between gap-4"><span>&nbsp;&nbsp;// … 使用 v …</span></p>
+              <p class="-mx-5 px-5 flex items-baseline justify-between gap-4" style="background:color-mix(in oklab, var(--color-success) 12%, transparent)"><span>&nbsp;&nbsp;<span class="text-success">// 无需手动释放</span></span><span class="text-success/80">内存随作用域归还</span></p>
+              <p class="flex items-baseline justify-between gap-4"><span>&nbsp;&nbsp;return 0;</span></p>
+              <p class="-mx-5 px-5 flex items-baseline justify-between gap-4" style="background:color-mix(in oklab, var(--color-success) 12%, transparent)"><span>}</span><span>作用域结束自动释放 <span class="badge badge-success badge-sm badge-soft">RAII</span></span></p>
+            </div>
+          </div>
+          <div class="diff-resizer"></div>
+        </div>
+        <div class="jc-rule mt-4"><span class="jc-rule-id">JC-9</span><p><strong>多文件 = tabs，单文件 = 卡。</strong>同一示例的多个文件进一张 tabs 卡（tabs-border + Alpine x-show），标签即文件名；单文件直接用代码卡。卡头三件套：文件名（等宽 13px）、语言标签、复制钮；复制成功用 toast 报告「已复制 hello.cpp」。</p></div>
+          <div class="jc-rule"><span class="jc-rule-id">JC-10</span><p><strong>着色整体外包给 hljs。</strong>github（浅系主题）/ github-dark（深系主题）两套样式随 <code>color-scheme</code> 自动切换，禁自定义配色；token 色归 hljs、代码纸底透明即主题纸面；代码体 14px / 1.65 等宽、长行横向滚动，不许缩字号换行。</p></div>
+        <div class="jc-rule"><span class="jc-rule-id">JC-11</span><p><strong>问题 / 修正用 diff 对照。</strong>两版代码放同坐标、同排版的满宽层里（diff-item 的直接子层必须 100cqi 满宽 + 不透明底，禁加 w-full——utilities 层会盖掉 daisy 的宽度规则）；左层 5% error 淡染、右层 5% success 淡染，改动行整行铺 12% 语义色条纹；行尾注释右对齐钉住面板右缘、两枚标签分别钉左端与右端，保证中缝停在任意位置两侧都有内容可读。两块除颜色与标记外逐像素一致，禁止在 diff 面板里各自居中摆小盒。</p></div>
+      </section>
+
+      <!-- ===== 5 提示框与微交互 ===== -->
+      <section id="p5" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p5'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§5</span>
+          <h2 class="text-[26px] font-semibold">提示框与微交互</h2>
+          <a class="jc-anchor" href="#p5" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <p>五档语义映射 daisyUI alert；旁注级提示用 soft 变体降噪。微交互三件：tooltip 悬注、toast 反馈、kbd 按键提示。</p>
+        <div class="mt-6 space-y-3">
+          <div role="alert" class="alert alert-soft bg-base-100 border border-base-300 text-base-content">
+            <span class="jc-alert-ico"><i data-lucide="pencil"></i></span>
+            <div><h3 class="font-semibold text-[15px]">note · 补充说明</h3><p class="text-sm jc-soft">默认档、最高频。中性纸色 + soft 变体，最安静。</p></div>
+          </div>
+          <div role="alert" class="alert alert-info alert-soft">
+            <span class="jc-alert-ico"><i data-lucide="info"></i></span>
+            <div><h3 class="font-semibold text-[15px]">info · 信息</h3><p class="text-sm">客观事实与版本信息：「该特性自 CMake 3.20 起可用」。</p></div>
+          </div>
+          <div role="alert" class="alert alert-success alert-soft">
+            <span class="jc-alert-ico"><i data-lucide="check"></i></span>
+            <div><h3 class="font-semibold text-[15px]">success · 推荐</h3><p class="text-sm">可直接照抄的结论性建议。</p></div>
+          </div>
+          <div role="alert" class="alert alert-warning alert-soft">
+            <span class="jc-alert-ico"><i data-lucide="triangle-alert"></i></span>
+            <div><h3 class="font-semibold text-[15px]">warning · 注意</h3><p class="text-sm">易踩的坑与未定义行为。</p></div>
+          </div>
+          <div role="alert" class="alert alert-error alert-soft">
+            <span class="jc-alert-ico"><i data-lucide="octagon-x"></i></span>
+            <div><h3 class="font-semibold text-[15px]">danger · 危险</h3><p class="text-sm">会造成实际损失的操作。</p></div>
+          </div>
+        </div>
+        <div class="jc-ex mt-6 grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-base-300">
+          <div class="p-5 flex flex-col items-center gap-3">
+            <span class="jc-label">tooltip 悬注</span>
+            <div class="tooltip tooltip-open" data-tip="悬停出现的一行旁注">
+              <span class="btn btn-outline btn-sm">tooltip</span>
+            </div>
+          </div>
+          <div class="p-5 flex flex-col items-center gap-3">
+            <span class="jc-label">toast 反馈</span>
+            <button class="btn btn-outline btn-sm" @click="toast=true; setTimeout(()=&gt;toast=false, 1600)">
+              <i data-lucide="message-square" class="size-4!"></i>触发
+            </button>
+          </div>
+          <div class="p-5 flex flex-col items-center gap-3">
+            <span class="jc-label">kbd 按键</span>
+            <span class="text-sm jc-soft">抽屉关闭 <kbd class="kbd kbd-sm">Esc</kbd></span>
+          </div>
+        </div>
+        <div class="jc-rule mt-4"><span class="jc-rule-id">JC-12</span><p><strong>五档映射固定。</strong>note → 中性纸色、info → alert-info、success → alert-success、warning → alert-warning、danger → alert-error；正文提示一律加 <code>alert-soft</code> 降噪，强提醒才用实底。图标 Lucide 五款（pencil / info / check / triangle-alert / octagon-x）永不混用。相邻两框独立成框。</p></div>
+        <div class="jc-rule"><span class="jc-rule-id">JC-13</span><p><strong>彩色同屏 ≤1，微交互不喧宾。</strong>success / warning / error 每屏合计至多一枚；toast 只报告动作结果（已复制 / 已展开），1.6s 自动退场；tooltip 只装一行字，不装段落。</p></div>
+      </section>
+
+      <!-- ===== 6 表格与数据 ===== -->
+      <section id="p6" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p6'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§6</span>
+          <h2 class="text-[26px] font-semibold">表格与数据</h2>
+          <a class="jc-anchor" href="#p6" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <p class="table-cap text-center text-[13px] jc-softer">表 6-1 · daisyUI 变体档位速查（badge 列内嵌于表格的样张）</p>
+        <div class="jc-ex overflow-x-auto mt-2">
+          <table class="table table-zebra table-sm">
+            <thead><tr><th>变体</th><th>语义</th><th>书籍用法</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr><td class="font-mono">badge-soft</td><td>淡染底</td><td>旁注级状态</td><td><span class="badge badge-primary badge-soft badge-sm">进行中</span></td></tr>
+              <tr><td class="font-mono">badge-outline</td><td>描边</td><td>中性标签</td><td><span class="badge badge-neutral badge-outline badge-sm">已废弃</span></td></tr>
+              <tr><td class="font-mono">badge-dash</td><td>虚线</td><td>待定 / 预留</td><td><span class="badge badge-warning badge-dash badge-sm">待验证</span></td></tr>
+              <tr><td class="font-mono">badge（实底）</td><td>实底</td><td>结论性状态</td><td><span class="badge badge-success badge-sm">C++20 起可用</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="jc-rule mt-4"><span class="jc-rule-id">JC-14</span><p><strong>表上图下，zebra 默认开。</strong>细框圆角展品容器包表，题注 13px 居中置于框上方；表头 12px 淡色小字，数字列 <code>tabular-nums</code> 等宽；偶行淡染、悬停洗色由 <code>table-zebra</code> 自带；状态列用 badge 变体表达（soft = 过程中、outline = 中性、dash = 待定、实底 = 结论）。长表加 <code>table-pin-rows</code> 钉住表头。</p></div>
+      </section>
+
+      <!-- ===== 7 折叠 · 路径 · 翻页 ===== -->
+      <section id="p7" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p7'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§7</span>
+          <h2 class="text-[26px] font-semibold">折叠 · 路径 · 翻页</h2>
+          <a class="jc-anchor" href="#p7" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <details class="collapse collapse-arrow bg-base-100 border border-base-300">
+          <summary class="collapse-title font-semibold text-[15px]">练习 1-1 · 答案示例（原生 details，无 JS 可开合）</summary>
+          <div class="collapse-content text-sm jc-soft">
+            <p>练习答案用原生 <code>details</code> 折叠（daisyUI collapse 只包外观与箭头动画）；打印自动展开。</p>
+          </div>
+        </details>
+        <ul class="timeline timeline-vertical timeline-compact timeline-snap-icon mt-8">
+          <li>
+            <div class="timeline-middle"><i data-lucide="check-check" class="text-success size-5!"></i></div>
+            <div class="timeline-start jc-label">第 1–6 章</div>
+            <div class="timeline-end timeline-box bg-base-100 border border-base-300 mb-3"><p class="text-sm font-semibold">入门与基础</p><p class="text-xs jc-softer">环境 · 类型 · 控制流 · 函数</p></div>
+            <hr/>
+          </li>
+          <li>
+            <hr/>
+            <div class="timeline-middle"><i data-lucide="check-check" class="text-success size-5!"></i></div>
+            <div class="timeline-start jc-label">第 7–12 章</div>
+            <div class="timeline-end timeline-box bg-base-100 border border-base-300 mb-3"><p class="text-sm font-semibold">对象与资源</p><p class="text-xs jc-softer">容器 · 类 · 生命周期 · 继承</p></div>
+            <hr/>
+          </li>
+          <li>
+            <hr/>
+            <div class="timeline-middle"><i data-lucide="book-open" class="text-primary size-5!"></i></div>
+            <div class="timeline-start jc-label">第 13–19 章</div>
+            <div class="timeline-end timeline-box bg-base-100 border border-primary/50 mb-3"><p class="text-sm font-semibold">泛型与函数式</p><p class="text-xs jc-softer">模板 · Lambda · 算法对象（当前位置）</p></div>
+            <hr/>
+          </li>
+          <li>
+            <hr/>
+            <div class="timeline-middle"><i data-lucide="circle-help" class="jc-softer size-5!"></i></div>
+            <div class="timeline-start jc-label">第 20–25 章</div>
+            <div class="timeline-end timeline-box bg-base-100 border border-base-300"><p class="text-sm font-semibold">并发与工程</p><p class="text-xs jc-softer">线程 · 原子操作 · variant · 流</p></div>
+          </li>
+        </ul>
+        <nav class="mt-8 flex join w-full border border-base-300 rounded-box bg-base-100 jc-shadow">
+          <a href="#p7" class="join-item btn btn-ghost flex-1 h-auto py-3 rounded-none rounded-l-box gap-3">
+            <i data-lucide="arrow-left" class="size-4! jc-softer"></i>
+            <span class="text-left"><span class="block text-xs jc-softer">上一章</span><span class="font-semibold text-[15px]">类与封装</span></span>
+          </a>
+          <span class="join-item btn btn-ghost flex-1 h-auto py-3 rounded-none rounded-r-box gap-3">
+            <span class="text-right"><span class="block text-xs jc-softer">下一章</span><span class="font-semibold text-[15px]">拷贝移动与生命周期</span></span>
+            <i data-lucide="arrow-right" class="size-4! jc-softer"></i>
+          </span>
+        </nav>
+        <div class="jc-rule mt-4"><span class="jc-rule-id">JC-15</span><p><strong>折叠走原生 details。</strong>collapse 组件只提供外观；折叠头 15px 半粗，答案内排版与正文同级。</p></div>
+          <div class="jc-rule"><span class="jc-rule-id">JC-16</span><p><strong>学习路径 = timeline（compact + snap-icon），阅读位置用 primary 描边标出。</strong>已读章节 success 对勾、未读灰；里程碑盒 timeline-box 中性细框；连线 hr 挂 li 首尾——snap-icon 必须带上，否则 compact 会把上行压成零高、连线不渲染（首节点无上线、末节点无下线）；刻度列用微标签（11px 等宽）。构建 / 编译类流程用 steps（见 §1），两者不混用。</p></div>
+        <div class="jc-rule"><span class="jc-rule-id">JC-17</span><p><strong>翻页器 = join 双钮等宽。</strong>左右 flex-1 各半、箭头朝外；无上 / 下一章时对应侧降为占位，标题永不压缩换行。</p></div>
+      </section>
+
+      <!-- ===== 8 封面与目录 ===== -->
+      <section id="p8" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p8'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§8</span>
+          <h2 class="text-[26px] font-semibold">封面与目录</h2>
+          <a class="jc-anchor" href="#p8" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <p>封面 = 渐变 hero + stats + 双按钮；目录 = 部分卡片网格（悬停浮起 + 主色描边）。卡片只出现在这两处。</p>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+          <a href="#top" class="card bg-base-100 border border-base-300 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md">
+            <div class="card-body p-4">
+              <h3 class="card-title text-base font-semibold">入门与基础</h3>
+              <p class="text-xs jc-softer">CH.01 – CH.04</p>
+              <div class="card-actions justify-end"><span class="badge badge-primary badge-soft badge-sm">已读</span></div>
+            </div>
+          </a>
+          <a href="#top" class="card bg-base-100 border border-base-300 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md">
+            <div class="card-body p-4">
+              <h3 class="card-title text-base font-semibold">对象与资源</h3>
+              <p class="text-xs jc-softer">CH.05 – CH.09</p>
+              <div class="card-actions justify-end"><span class="badge badge-primary badge-soft badge-sm">已读</span></div>
+            </div>
+          </a>
+          <a href="#top" class="card bg-base-100 border border-primary/50 ring-1 ring-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div class="card-body p-4">
+              <h3 class="card-title text-base font-semibold">泛型与函数式</h3>
+              <p class="text-xs jc-softer">CH.10 – CH.14</p>
+              <div class="card-actions justify-end"><span class="badge badge-primary badge-sm">当前</span></div>
+            </div>
+          </a>
+          <a href="#top" class="card bg-base-100 border border-base-300 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md">
+            <div class="card-body p-4">
+              <h3 class="card-title text-base font-semibold">并发与工程</h3>
+              <p class="text-xs jc-softer">CH.15 – CH.25</p>
+              <div class="card-actions justify-end"><span class="badge badge-neutral badge-outline badge-sm">未读</span></div>
+            </div>
+          </a>
+        </div>
+        <div class="jc-rule mt-4"><span class="jc-rule-id">JC-18</span><p><strong>卡片只进封面与目录。</strong>网格 2 / 4 列响应式；当前部分主色描边 + 微 ring，其余中性细框；悬停 -2px 浮起 + 主色描边 + 组件阴影档，200ms 过渡。正文里禁止卡片栅格。</p></div>
+        <div class="jc-rule"><span class="jc-rule-id">JC-19</span><p><strong>hero 用令牌渐变 + 织锦纹。</strong><code>bg-gradient-to-b from-primary/10</code> 一道十份主色染开的顶光，落到 base-200 桌面即止；其上叠 1px 交叉织锦细线（主色 5%，向下淡出）作全页唯一的装饰母题——锦册之名，织纹为记。不做多色渐变横幅。</p></div>
+      </section>
+
+      <!-- ===== 9 版式与骨架 ===== -->
+      <section id="p9" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p9'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§9</span>
+          <h2 class="text-[26px] font-semibold">版式与骨架</h2>
+          <a class="jc-anchor" href="#p9" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <p>页面骨架五层（顶栏 / 遮罩 / 抽屉 / 主区 / 大纲轨），演示框用 mockup-window：</p>
+        <div class="mockup-window border border-base-300 bg-base-100 mt-6 jc-shadow">
+          <div class="px-6 py-5 bg-base-100 font-mono text-[13px] leading-[1.9] overflow-x-auto">
+            <div><span class="text-primary">&lt;div class="drawer"&gt;</span></div>
+            <div>&nbsp;&nbsp;<span class="text-primary">&lt;input</span> type="checkbox" class="drawer-toggle"&gt;<span class="jc-softer">&nbsp;&nbsp;← 抽屉开关（无 JS 可开合）</span></div>
+            <div>&nbsp;&nbsp;<span class="text-primary">&lt;div</span> class="drawer-content flex flex-col"&gt;<span class="jc-softer">&nbsp;&nbsp;← 页主体</span></div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-primary">&lt;header</span> class="navbar glass sticky"&gt;…&lt;/header&gt;<span class="jc-softer">&nbsp;&nbsp;← 玻璃顶栏</span></div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-primary">&lt;main</span> class="jc-measure"&gt;…&lt;/main&gt;<span class="jc-softer">&nbsp;&nbsp;← 组件版心 880px</span></div>
+            <div>&nbsp;&nbsp;<span class="text-primary">&lt;/div&gt;</span></div>
+            <div>&nbsp;&nbsp;<span class="text-primary">&lt;div</span> class="drawer-side"&gt;…<span class="text-primary">&lt;/div&gt;</span><span class="jc-softer">&nbsp;&nbsp;← 目录抽屉</span></div>
+            <div><span class="text-primary">&lt;/div&gt;</span></div>
+            <div><span class="text-primary">&lt;nav</span> class="jc-rail"&gt;…<span class="text-primary">&lt;/nav&gt;</span><span class="jc-softer">&nbsp;&nbsp;← 本页大纲轨 ≥1400px</span></div>
+          </div>
+        </div>
+        <h3 class="border-l-[3px] border-primary pl-3 text-xl font-semibold mt-10">排版节奏（h3 记号条样张）</h3>
+        <p class="mt-3">正文 17px / 1.8，文字列 720px（约 42 汉字/行）、组件版心 880px，两档左缘对齐；间距全走 Tailwind 4 的倍数档（4 / 8 / 12 / 16 / 24 / 40 / 64px）。行内代码 <code>std::vector</code>、按键 <span class="whitespace-nowrap"><kbd class="kbd kbd-sm">Ctrl</kbd>+<kbd class="kbd kbd-sm">C</kbd></span>、链接 <a href="#p9" class="link link-primary link-hover">跳转本节</a>。</p>
+        <blockquote class="border-l-4 border-primary/40 pl-4 jc-soft mt-6 max-w-[720px]">
+          「引用块：左侧主色四份细线 + 软色墨字，只用于原文摘录与标准条文——中文不用斜体，以防合成假斜。」
+        </blockquote>
+        <div class="jc-rule mt-4"><span class="jc-rule-id">JC-20</span><p><strong>双档版心。</strong>组件版心 880px 居中，正文段落 / 列表再收窄到 720px 文字列，两档左缘对齐；表格、代码、图行走宽档。</p></div>
+        <div class="jc-rule"><span class="jc-rule-id">JC-21</span><p><strong>中文排印整组继承：</strong><code>line-break:strict</code>、<code>text-autospace</code> 渐进、标题 <code>balance</code> / 段落 <code>pretty</code>、<code>font-synthesis:none</code> 防合成粗体；字重只 400 / 600 两档；正文一律正体，中文禁斜体。</p></div>
+        <div class="jc-rule"><span class="jc-rule-id">JC-22</span><p><strong>顶栏玻璃化。</strong>sticky navbar 加 <code>glass</code>（半透明 + 背景模糊 + 细边线），滚动时内容从其下透出；顶栏内只放目录钮、书名菜单、路径、离线徽注、主题菜单。</p></div>
+        <div class="jc-rule"><span class="jc-rule-id">JC-23</span><p><strong>抽屉即目录。</strong>复选框开关，无 JS 可开合；关闭四通路：菜单钮、遮罩、Esc（Alpine）、点目录项。面板 base-100 底 + 右缘发丝线；暗色主题遮罩加深一档保证可感知。</p></div>
+      </section>
+
+      <!-- ===== 10 可视化规范（自素卷整组继承） ===== -->
+      <section id="p10" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p10'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§10</span>
+          <h2 class="text-[26px] font-semibold">可视化规范</h2>
+          <a class="jc-anchor" href="#p10" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <p>插图一律 SVG 线框、颜色只表义：三辅色 = 主题令牌 <code>error / success / secondary</code>，随主题整组翻转；图内文字与箭头永远墨色。下面是活样张（点开放大成书页内的真实用法）：</p>
+        <div class="jc-fig mt-6">
+          <svg width="720" height="300" viewBox="0 0 720 300" role="img" aria-label="RAII 资源生命周期示例图">
+            <text x="360" y="26" text-anchor="middle" font-size="13">RAII：资源获取即初始化（dg 分型活样张）</text>
+            <rect class="dg-ext" x="30" y="60" width="120" height="46" rx="8" fill="none" stroke-width="1.4"/>
+            <text class="dg-ext-t" x="90" y="88" text-anchor="middle" font-size="13">操作系统</text>
+            <rect class="dg-box" x="210" y="60" width="140" height="46" rx="8" stroke-width="1"/>
+            <text x="280" y="88" text-anchor="middle" font-size="13">构造函数</text>
+            <rect class="dg-focal" x="410" y="60" width="140" height="46" rx="8" stroke-width="1"/>
+            <text x="480" y="88" text-anchor="middle" font-size="13">持有资源</text>
+            <rect class="dg-new" x="610" y="60" width="80" height="46" rx="8" fill="none" stroke-width="1.4"/>
+            <text class="dg-new-t" x="650" y="88" text-anchor="middle" font-size="13">新块</text>
+            <path class="dg-edge" d="M150 83 H 205" stroke-width="1.2"/>
+            <path class="dg-arrow" d="M205 83 l-7 -4 v 8 z"/>
+            <path class="dg-edge" d="M350 83 H 405" stroke-width="1.2"/>
+            <path class="dg-arrow" d="M405 83 l-7 -4 v 8 z"/>
+            <path class="dg-edge" d="M550 83 H 605" stroke-width="1.2"/>
+            <path class="dg-arrow" d="M605 83 l-7 -4 v 8 z"/>
+            <rect class="dg-store" x="410" y="170" width="140" height="46" rx="8" stroke="var(--color-base-content)" stroke-width="1"/>
+            <text x="480" y="198" text-anchor="middle" font-size="13">作用域存活</text>
+            <path class="dg-opt" d="M480 106 V 165" stroke-width="1.2"/>
+            <rect class="dg-bad" x="210" y="170" width="120" height="46" rx="8" fill="none" stroke-width="1.4"/>
+            <text class="dg-bad-t" x="270" y="198" text-anchor="middle" font-size="13">悬垂指针</text>
+            <path class="dg-bad-e" d="M405 193 H 335" stroke-width="1.4"/>
+            <path d="M335 193 l7 -4 v 8 z" fill="var(--color-error)"/>
+            <rect class="dg-box" x="30" y="170" width="120" height="46" rx="8" stroke-width="1"/>
+            <text x="90" y="198" text-anchor="middle" font-size="13">析构函数</text>
+            <path class="dg-edge" d="M155 193 H 205" stroke-width="1.2"/>
+            <path class="dg-arrow" d="M205 193 l-7 -4 v 8 z"/>
+            <line x1="30" y1="252" x2="690" y2="252" stroke="var(--color-base-300)" stroke-width="1"/>
+            <rect x="30" y="262" width="14" height="14" rx="3" fill="none" stroke="var(--color-base-content)" stroke-width="1"/>
+            <text x="52" y="273" font-size="12">主体 dg-box</text>
+            <rect x="140" y="262" width="14" height="14" rx="3" fill="none" class="dg-ext" stroke-width="1.2"/>
+            <text class="dg-ext-t" x="162" y="273" font-size="12">外部 secondary</text>
+            <rect x="270" y="262" width="14" height="14" rx="3" fill="none" class="dg-new" stroke-width="1.2"/>
+            <text class="dg-new-t" x="292" y="273" font-size="12">新增 success</text>
+            <rect x="400" y="262" width="14" height="14" rx="3" fill="none" class="dg-bad" stroke-width="1.2"/>
+            <text class="dg-bad-t" x="422" y="273" font-size="12">失效 error</text>
+            <line x1="520" y1="269" x2="548" y2="269" class="dg-opt" stroke-width="1.2"/>
+            <text x="554" y="273" font-size="12">中性虚线 dg-opt</text>
+          </svg>
+        </div>
+        <p class="jc-figcap">图 10-1 · RAII 资源生命周期：构造即获取、析构即归还（白底全彩描边活样张）</p>
+        <div class="mt-4 flex justify-center">
+          <button class="btn btn-outline btn-sm gap-2" onclick="document.getElementById('figModal').showModal()">
+            <i data-lucide="maximize-2" class="size-4!"></i>放大插图（modal）
+          </button>
+        </div>
+        <dialog id="figModal" class="modal">
+          <div class="modal-box max-w-3xl bg-base-100">
+            <div class="jc-fig">
+              <svg width="100%" height="auto" viewBox="0 0 720 300" role="img" aria-label="RAII 示例图放大">
+                <text x="360" y="26" text-anchor="middle" font-size="13">RAII：资源获取即初始化</text>
+                <rect class="dg-ext" x="30" y="60" width="120" height="46" rx="8" fill="none" stroke-width="1.4"/>
+                <text class="dg-ext-t" x="90" y="88" text-anchor="middle" font-size="13">操作系统</text>
+                <rect class="dg-box" x="210" y="60" width="140" height="46" rx="8" stroke-width="1"/>
+                <text x="280" y="88" text-anchor="middle" font-size="13">构造函数</text>
+                <rect class="dg-focal" x="410" y="60" width="140" height="46" rx="8" stroke-width="1"/>
+                <text x="480" y="88" text-anchor="middle" font-size="13">持有资源</text>
+                <path class="dg-edge" d="M350 83 H 405" stroke-width="1.2"/><path class="dg-arrow" d="M405 83 l-7 -4 v 8 z"/>
+                <path class="dg-edge" d="M150 83 H 205" stroke-width="1.2"/><path class="dg-arrow" d="M205 83 l-7 -4 v 8 z"/>
+                <rect class="dg-bad" x="210" y="170" width="120" height="46" rx="8" fill="none" stroke-width="1.4"/>
+                <text class="dg-bad-t" x="270" y="198" text-anchor="middle" font-size="13">悬垂指针</text>
+                <path class="dg-bad-e" d="M405 193 H 335" stroke-width="1.4"/><path d="M335 193 l7 -4 v 8 z" fill="var(--color-error)"/>
+                <line x1="30" y1="252" x2="690" y2="252" stroke="var(--color-base-300)" stroke-width="1"/>
+              </svg>
+            </div>
+            <div class="modal-action"><form method="dialog"><button class="btn btn-sm">关闭</button></form></div>
+          </div>
+          <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+        <p class="table-cap mt-8 text-center text-[13px] jc-softer">表 10-1 · dg 分型类目与语义（自素卷整组继承）</p>
+        <div class="jc-ex overflow-x-auto mt-2">
+          <table class="table table-zebra table-sm">
+            <thead><tr><th>dg 类</th><th>语义</th><th>样式（颜色取主题令牌）</th></tr></thead>
+            <tbody>
+              <tr><td class="font-mono">dg-box</td><td>内部主体</td><td>纸底 + 1px 墨边</td></tr>
+              <tr><td class="font-mono">dg-ext</td><td>外部依赖 / 语言对照</td><td>白底 + 1.2px secondary 描边</td></tr>
+              <tr><td class="font-mono">dg-store</td><td>存储 / 状态</td><td>5% 墨染 + 墨边</td></tr>
+              <tr><td class="font-mono">dg-bad</td><td>失效 / 悬垂 / UB / 丢数据</td><td>白底 + 1.4px error 描边</td></tr>
+              <tr><td class="font-mono">dg-new</td><td>新分配 / 新增成员</td><td>白底 + 1.4px success 描边</td></tr>
+              <tr><td class="font-mono">dg-focal</td><td>入口焦点</td><td>primary 8% 洗底 + 蓝边，一图至多两枚</td></tr>
+              <tr><td class="font-mono">dg-opt / dg-bad-e</td><td>中性过境 / 危险路径</td><td>4,3 虚线，后者 error 色 1.4px</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="jc-rule mt-4"><span class="jc-rule-id">JC-24</span><p><strong>白底全彩描边，颜色只表义（自素卷 PB-30 整组继承）。</strong>框内不加底色、边框本身上色；只染边框不染文字——图内文字与箭头永远墨色；单图辅色 ≤2 主色相 + primary 焦点；中性状态（预留 / 未指定 / 机制内正常释放）用灰虚线，不许为好看把中性染成语义色。与素卷的差异仅在：辅色改由主题令牌派生（<code>error / success / secondary</code>），随主题翻转。</p></div>
+        <div class="jc-rule"><span class="jc-rule-id">JC-25</span><p><strong>连线七则（自素卷整组继承）。</strong>① 异轴连线正交肘线 r=8，共轴才许直线；② 边标签离线 6–10px、衬不透明遮罩、不压后画节点；③ 两线不共路径，交叉走跳线桥；④ 同缘挂点 ≥12px、平行线全程 ≥12px；⑤ 不穿非端点节点，避不开的过境段虚线；⑥ 箭头只落真实终点；⑦ 走线与相邻文字净距 ≥8px。文字宽度按实测字腔计量，图例如实分列每种分型、构建期校验。</p></div>
+        <div class="jc-rule"><span class="jc-rule-id">JC-26</span><p><strong>插图可放大。</strong>正文内插图受版心约束时，提供 modal 放大（点按钮或点图），放大视图颜色、线宽不变——语义色不因放大而失真。</p></div>
+      </section>
+
+      <!-- ===== 11 无 JS 与离线 ===== -->
+      <section id="p11" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p11'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§11</span>
+          <h2 class="text-[26px] font-semibold">无 JS 与离线</h2>
+          <a class="jc-anchor" href="#p11" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <div role="alert" class="alert alert-soft bg-base-100 border border-base-300 text-base-content">
+          <span class="jc-alert-ico"><i data-lucide="wifi-off"></i></span>
+          <div><p class="text-sm">禁用 JavaScript 后：目录抽屉仍可开合（复选框）、tabs 降级为首帧内容、全部文字可读、答案可展开；Alpine 只增强复制反馈、Esc 与大纲轨跟随。断网后：五个依赖 + 36 主题本地内置，页面完整成立。渐进增强的加载态由骨架组件表达——</p></div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+          <div class="jc-ex p-4">
+            <p class="text-sm font-semibold mb-3 flex items-center gap-2"><span class="status status-primary"></span>skeleton · 骨架占位</p>
+            <div class="space-y-2">
+              <div class="skeleton h-4 w-full"></div>
+              <div class="skeleton h-4 w-11/12"></div>
+              <div class="skeleton h-4 w-4/5"></div>
+            </div>
+          </div>
+          <div class="jc-ex p-4">
+            <p class="text-sm font-semibold mb-3 flex items-center gap-2"><span class="loading loading-dots loading-sm text-primary"></span>loading · 过程指示</p>
+            <div class="flex items-center gap-4 text-sm jc-soft">
+              <span class="loading loading-spinner loading-sm text-primary"></span>
+              <span class="loading loading-bars loading-sm text-secondary"></span>
+              <span>构建 / 校验进行中的瞬时状态</span>
+            </div>
+          </div>
+        </div>
+        <div class="jc-rule mt-4"><span class="jc-rule-id">JC-27</span><p><strong>JS 是增强不是依赖。</strong>内容开关一律平台原生（checkbox 抽屉、details 折叠、dialog modal、diff 拖拽）；骨架与 loading 只表达「即将出现的内容」，不用来表达状态机。</p></div>
+      </section>
+
+      <!-- ===== 12 自检清单 ===== -->
+      <section id="p12" class="jc-sec mt-16" x-intersect:enter.margin.-30%="active='p12'">
+        <header class="jc-sechead">
+          <span class="jc-sec-num">§12</span>
+          <h2 class="text-[26px] font-semibold">自检清单</h2>
+          <a class="jc-anchor" href="#p12" aria-label="本节锚点"><i data-lucide="hash" class="size-4!"></i></a>
+        </header>
+        <ul class="space-y-2">
+          <li class="flex gap-2 items-start"><i data-lucide="check" class="text-primary mt-1 shrink-0"></i><span>断网双击打开页面完整成立；禁 JS 后抽屉可开、内容全可读</span></li>
+          <li class="flex gap-2 items-start"><i data-lucide="check" class="text-primary mt-1 shrink-0"></i><span>颜色零裸值：页面与自定义 CSS 无 <code>#hex</code> / <code>rgb(</code>，全部主题令牌或其 color-mix 派生</span></li>
+          <li class="flex gap-2 items-start"><i data-lucide="check" class="text-primary mt-1 shrink-0"></i><span>六款主题逐一点过：结构间距逐像素同构，hljs 浅深正确跟随</span></li>
+          <li class="flex gap-2 items-start"><i data-lucide="check" class="text-primary mt-1 shrink-0"></i><span>每块 UI 答得上「来自哪个组件」，且在 §3 白名单内</span></li>
+          <li class="flex gap-2 items-start"><i data-lucide="check" class="text-primary mt-1 shrink-0"></i><span>代码卡全有名；多文件走 tabs；diff 对照左右排版一致仅色异</span></li>
+          <li class="flex gap-2 items-start"><i data-lucide="check" class="text-primary mt-1 shrink-0"></i><span>同屏语义色 ≤1；语义未被挪用（error 只给真危险）</span></li>
+          <li class="flex gap-2 items-start"><i data-lucide="check" class="text-primary mt-1 shrink-0"></i><span>插图守 JC-24/25：白底全彩描边、文字永墨、图例如实分型、连线七则过校验</span></li>
+          <li class="flex gap-2 items-start"><i data-lucide="check" class="text-primary mt-1 shrink-0"></i><span>正文文字列 720px / 组件版心 880px 左缘对齐；间距全 4 的倍数档</span></li>
+        </ul>
+        <div class="divider text-xs jc-softer font-mono">STATE</div>
+        <div class="flex flex-wrap gap-4 text-sm">
+          <span class="flex items-center gap-2"><span class="status status-success"></span>六主题同构</span>
+          <span class="flex items-center gap-2"><span class="status status-success"></span>零外链</span>
+          <span class="flex items-center gap-2"><span class="status status-success"></span>可视化继承完成</span>
+          <span class="flex items-center gap-2"><span class="status status-primary"></span>书籍端同步待批</span>
+        </div>
+        <div class="jc-rule mt-4"><span class="jc-rule-id">JC-28</span><p><strong>每次改动逐项过清单，任何一条不过就不算过。</strong>本页即活样张：页面上的缺陷就是规范的缺陷。</p></div>
+      </section>
+
+    </main>
+
+    <!-- toast -->
+    <div x-show="toast" x-transition.opacity.duration.200ms x-cloak
+         class="toast toast-bottom toast-center z-50">
+      <div class="alert alert-success py-2 px-4 text-sm shadow-lg">
+        <i data-lucide="check-check" class="size-4!"></i><span>已复制到剪贴板</span>
+      </div>
+    </div>
+
+    <!-- ================= 页脚 ================= -->
+    <footer class="bg-base-200 border-t border-base-300 mt-16">
+      <div class="jc-measure py-10 flex flex-col items-center gap-2 text-center">
+        <p class="font-semibold tracking-wide">锦册 · Brocade Book
+          <span class="badge badge-primary badge-outline badge-sm font-mono ml-1 align-middle">v1.0</span></p>
+        <p class="text-[13px] jc-soft">Tailwind CSS · daisyUI · Alpine.js · highlight.js · Lucide —— 全本地内置 · 零构建 · 断网可读</p>
+        <p class="text-xs jc-softer">与 <a href="../plain/index.html" class="link link-hover text-primary">素卷 · Plain Book</a> 并列 · 本页即活样张</p>
+      </div>
+    </footer>
+
+    <!-- ================= 本页大纲轨 ================= -->
+    <nav class="jc-rail hidden min-[1400px]:block" aria-label="本页大纲">
+      <h3 class="jc-softer">本页大纲</h3>
+      <a href="#p1" :class="active==='p1'?'jc-cur':''">1 总则与整合链</a>
+      <a href="#p2" :class="active==='p2'?'jc-cur':''">2 主题与令牌</a>
+      <a href="#p3" :class="active==='p3'?'jc-cur':''">3 组件目录</a>
+      <a href="#p4" :class="active==='p4'?'jc-cur':''">4 代码</a>
+      <a href="#p5" :class="active==='p5'?'jc-cur':''">5 提示与微交互</a>
+      <a href="#p6" :class="active==='p6'?'jc-cur':''">6 表格与数据</a>
+      <a href="#p7" :class="active==='p7'?'jc-cur':''">7 折叠路径翻页</a>
+      <a href="#p8" :class="active==='p8'?'jc-cur':''">8 封面与目录</a>
+      <a href="#p9" :class="active==='p9'?'jc-cur':''">9 版式与骨架</a>
+      <a href="#p10" :class="active==='p10'?'jc-cur':''">10 可视化规范</a>
+      <a href="#p11" :class="active==='p11'?'jc-cur':''">11 无 JS 与离线</a>
+      <a href="#p12" :class="active==='p12'?'jc-cur':''">12 自检清单</a>
+    </nav>
+  </div>
+
+  <!-- ================= 目录抽屉 ================= -->
+  <div class="drawer-side z-50">
+    <label for="nav-toggle" aria-label="关闭目录" class="drawer-overlay"></label>
+    <ul class="menu bg-base-100 text-base-content min-h-full w-80 p-4 gap-1" style="border-inline-end:1px solid var(--color-base-300)">
+      <li class="menu-title font-semibold flex items-center gap-2"><i data-lucide="book-open" class="size-4! text-primary"></i>锦册 · Brocade Book</li>
+      <li><a href="#top"><i data-lucide="feather"></i>封面 / 活样张</a></li>
+      <li class="menu-title mt-4">基础</li>
+      <li><a href="#p1" onclick="document.getElementById('nav-toggle').checked=false">1 总则与整合链</a></li>
+      <li><a href="#p2" onclick="document.getElementById('nav-toggle').checked=false">2 主题与令牌</a></li>
+      <li><a href="#p3" onclick="document.getElementById('nav-toggle').checked=false">3 组件目录</a></li>
+      <li class="menu-title mt-4">组件</li>
+      <li><a href="#p4" onclick="document.getElementById('nav-toggle').checked=false">4 代码</a></li>
+      <li><a href="#p5" onclick="document.getElementById('nav-toggle').checked=false">5 提示框与微交互</a></li>
+      <li><a href="#p6" onclick="document.getElementById('nav-toggle').checked=false">6 表格与数据</a></li>
+      <li><a href="#p7" onclick="document.getElementById('nav-toggle').checked=false">7 折叠 · 路径 · 翻页</a></li>
+      <li><a href="#p8" onclick="document.getElementById('nav-toggle').checked=false">8 封面与目录</a></li>
+      <li class="menu-title mt-4">版式与约束</li>
+      <li><a href="#p9" onclick="document.getElementById('nav-toggle').checked=false">9 版式与骨架</a></li>
+      <li><a href="#p10" onclick="document.getElementById('nav-toggle').checked=false">10 可视化规范</a></li>
+      <li><a href="#p11" onclick="document.getElementById('nav-toggle').checked=false">11 无 JS 与离线</a></li>
+      <li><a href="#p12" onclick="document.getElementById('nav-toggle').checked=false">12 自检清单</a></li>
+    </ul>
+  </div>
+</div>
+
+<script src="assets/alpine-intersect.min.js" defer></script>
+<script src="assets/alpine.min.js" defer></script>
+<script src="assets/highlight.min.js"></script>
+<script src="assets/lucide.min.js"></script>
+<script>
+/* ---- 主题：令牌组切换 + data-scheme 标注 + hljs 跟随 + 记忆 ---- */
+function jcApplyTheme(t){
+  var JC=["light","corporate","nord","dark","dim","night"];
+  if(JC.indexOf(t)<0) t="light";
+  var root=document.documentElement;
+  root.setAttribute("data-theme",t);
+  var scheme=(getComputedStyle(root).colorScheme||"light");
+  root.setAttribute("data-scheme", scheme.indexOf("dark")>=0 ? "dark" : "light");
+  var l=document.getElementById("hlLight"), d=document.getElementById("hlDark");
+  if(l&&d){ var dark = scheme.indexOf("dark")>=0; l.disabled=dark; d.disabled=!dark; }
+  try{ localStorage.setItem("jc-theme",t); }catch(e){}
+}
+(function(){
+  jcApplyTheme(document.documentElement.getAttribute("data-theme")||"light");
+  window.addEventListener("DOMContentLoaded",function(){
+    if(window.hljs) hljs.highlightAll();
+    if(window.lucide) lucide.createIcons({ attrs:{ "stroke-width":1.75 } });
+    /* 打印：折叠答案全部展开、抽屉收起（纸面完整） */
+    window.addEventListener("beforeprint",function(){
+      document.querySelectorAll("details").forEach(function(d){ d.open=true; });
+      var n=document.getElementById("nav-toggle"); if(n) n.checked=false;
+    });
+    /* 截图钩子：?drawer=1 开抽屉；?flat=1 页脚自然流 */
+    if(/[?&]drawer=1/.test(location.search)){
+      var n=document.getElementById("nav-toggle"); if(n) n.checked=true;
+    }
+    if(/[?&]flat=1/.test(location.search)) document.body.classList.add("jc-flat");
+  });
+})();
+</script>
+</body>
+</html>
